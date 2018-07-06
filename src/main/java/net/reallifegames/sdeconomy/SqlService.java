@@ -73,16 +73,16 @@ public class SqlService {
      */
     @Nonnull
     private static final String TRANSACTION_TABLE_SQL = "CREATE TABLE IF NOT EXISTS `sd_transaction` ( `uuid` CHAR(36) " +
-            "NOT NULL , `action` TINYINT NOT NULL , `type` VARCHAR(255) NOT NULL , `date` TIMESTAMP NOT NULL DEFAULT " +
-            "CURRENT_TIMESTAMP , `amount` FLOAT NOT NULL , INDEX (`uuid`), INDEX (`action`), INDEX (`type`)) ENGINE = " +
-            "InnoDB;";
+            "NOT NULL , `action` TINYINT NOT NULL , `type` VARCHAR(255) NOT NULL , `unsafeData` TINYINT(4) DEFAULT '0', " +
+            "`date` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , `amount` FLOAT NOT NULL , INDEX (`uuid`), INDEX " +
+            "(`action`), INDEX (`type`)) ENGINE = InnoDB;";
 
     /**
      * The transaction table insert sql query string.
      */
     @Nonnull
     private static final String INSERT_TRANSACTION_TABLE_SQL = "INSERT INTO `sd_transaction`(`uuid`, `action`, `type`, " +
-            "`amount`) VALUES (?,?,?,?)";
+            "`unsafeData`, `amount`) VALUES (?,?,?,?,?)";
 
     /**
      * The set price action for the transaction table.
@@ -209,7 +209,7 @@ public class SqlService {
      *                      argument is supplied to this method. If a database access error occurs or the url is null.
      */
     public static void insertTransaction(@Nonnull final String jdbcUrl, @Nonnull final String uuid, final byte action,
-                                         @Nonnull final String type, final float amount) throws SQLException {
+                                         @Nonnull final String type, final byte unsafeData, final float amount) throws SQLException {
         // Connect to database
         final Connection sqlConnection = DriverManager.getConnection(jdbcUrl);
         // Setup prepared statement
@@ -217,7 +217,8 @@ public class SqlService {
         insertStatement.setString(1, uuid);
         insertStatement.setByte(2, action);
         insertStatement.setString(3, type);
-        insertStatement.setFloat(4, amount);
+        insertStatement.setByte(4, unsafeData);
+        insertStatement.setFloat(5, amount);
         // Execute query
         insertStatement.executeUpdate();
     }

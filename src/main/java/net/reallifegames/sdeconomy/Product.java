@@ -127,7 +127,7 @@ public class Product {
      */
     public static double sell(@Nonnull Product product, @Nonnull final String jdbcUrl, @Nonnull final String uuid,
                               final int amount) throws SQLException {
-        SqlService.insertTransaction(jdbcUrl, uuid, SqlService.SELL_ACTION, product.type, amount);
+        SqlService.insertTransaction(jdbcUrl, uuid, SqlService.SELL_ACTION, product.type, product.unsafeData, amount);
         float returnValue = 0;
         for (int i = 0; i < amount; i++) {
             returnValue += product.price * ((float) product.demand / (float) product.supply);
@@ -167,7 +167,7 @@ public class Product {
      */
     public static double buy(@Nonnull Product product, @Nonnull final String jdbcUrl, @Nonnull final String uuid,
                              final int amount) throws SQLException {
-        SqlService.insertTransaction(jdbcUrl, uuid, SqlService.BUY_ACTION, product.type, amount);
+        SqlService.insertTransaction(jdbcUrl, uuid, SqlService.BUY_ACTION, product.type, product.unsafeData, amount);
         float returnValue = 0;
         for (int i = 0; i < amount; i++) {
             returnValue += product.price * ((float) product.demand / (float) product.supply);
@@ -188,7 +188,7 @@ public class Product {
      */
     public static void setPrice(@Nonnull Product product, @Nonnull final String jdbcUrl, @Nonnull final String uuid,
                                 final float price) throws SQLException {
-        SqlService.insertTransaction(jdbcUrl, uuid, SqlService.SET_ACTION, product.type, price);
+        SqlService.insertTransaction(jdbcUrl, uuid, SqlService.SET_ACTION, product.type, product.unsafeData, price);
         product.price = price;
     }
 }
