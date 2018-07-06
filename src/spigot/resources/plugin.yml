@@ -26,6 +26,7 @@ name: SdEconomy
 version: 1.0.0
 main: net.reallifegames.sdeconomy.SdEconomy
 author: agent6262
+depend: [Vault]
 
 commands:
   setprice:
