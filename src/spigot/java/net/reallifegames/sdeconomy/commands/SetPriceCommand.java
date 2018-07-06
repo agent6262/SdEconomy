@@ -25,6 +25,7 @@ package net.reallifegames.sdeconomy.commands;
 
 import net.reallifegames.sdeconomy.Product;
 import net.reallifegames.sdeconomy.SdEconomy;
+import org.apache.commons.lang.ObjectUtils;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -68,9 +69,22 @@ public class SetPriceCommand extends BaseCommand {
                 return false;
             }
             // Get price
-            final float price = Float.parseFloat(args[2]);
+            final float price;
+            try {
+                price = Float.parseFloat(args[2]);
+            } catch (NumberFormatException | NullPointerException e) {
+                sender.sendMessage(ChatColor.RED + args[2] + " is not a number.");
+                return false;
+            }
             final String[] itemTypeInfo = args[1].split(":");
-            final byte unsafeData = itemTypeInfo.length == 2 ? Byte.parseByte(itemTypeInfo[1]) : 0;
+            final byte unsafeData;
+            try {
+                unsafeData = itemTypeInfo.length == 2 ? Byte.parseByte(itemTypeInfo[1]) : 0;
+            } catch (NumberFormatException | NullPointerException e) {
+                sender.sendMessage(ChatColor.RED + itemTypeInfo[1] + " is not a number.");
+                return false;
+            }
+            itemTypeInfo[0] = itemTypeInfo[0].toUpperCase();
             final Product product = pluginInstance.getStockPrices().computeIfAbsent(args[0],
                     k->new Product(itemTypeInfo[0]));
             product.type = itemTypeInfo[0];

@@ -64,9 +64,14 @@ public class CheckSellCommand extends BaseCommand {
             return false;
         } else {
             // Convert item type to uppercase
-            args[0] = args[0].toUpperCase();
-            final int amount = Integer.parseInt(args[1]);
-            final Product product = pluginInstance.getStockPrices().get(args[0]);
+            final int amount;
+            try {
+                amount = Integer.parseInt(args[1]);
+            } catch (NumberFormatException | NullPointerException e) {
+                sender.sendMessage(ChatColor.RED + args[1] + " is not a number.");
+                return false;
+            }
+            final Product product = pluginInstance.getStockPrices().get(args[0]);//todo
             if (product == null) {
                 sender.sendMessage(ChatColor.GOLD + "The price of `" + args[0] + "` has not been set yet.");
                 return true;

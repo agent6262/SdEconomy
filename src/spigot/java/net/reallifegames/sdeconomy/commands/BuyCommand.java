@@ -49,17 +49,23 @@ public class BuyCommand extends BaseCommand {
                 return false;
             }
             // Get amount of an item
-            final int amount = Integer.parseInt(args[1]);
-            // Get product and item
-            final Material material = Material.getMaterial(args[0]);
-            if (material == null) {
-                // Send player message
-                sender.sendMessage(ChatColor.RED + "Invalid Item type.");
-                return true;
+            final int amount;
+            try {
+                amount = Integer.parseInt(args[1]);
+            } catch (NumberFormatException | NullPointerException e) {
+                sender.sendMessage(ChatColor.RED + args[1] + " is not a number.");
+                return false;
             }
+            // Get product and item
             final Product product = pluginInstance.getStockPrices().get(args[0]);
             if (product == null) {
                 sender.sendMessage(ChatColor.GOLD + "The price of `" + args[0] + "` has not been set yet.");
+                return true;
+            }
+            final Material material = Material.getMaterial(product.type);
+            if (material == null) {
+                // Send player message
+                sender.sendMessage(ChatColor.RED + "Invalid Item type.");
                 return true;
             }
             // Get player returns and add to player account

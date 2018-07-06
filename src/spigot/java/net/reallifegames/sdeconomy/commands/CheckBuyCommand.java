@@ -40,7 +40,13 @@ public class CheckBuyCommand extends BaseCommand {
             sender.sendMessage(ChatColor.RED + "You need to specify the item name and amount.");
             return false;
         } else {
-            final int amount = Integer.parseInt(args[1]);
+            final int amount;
+            try {
+                amount = Integer.parseInt(args[1]);
+            } catch (NumberFormatException | NullPointerException e) {
+                sender.sendMessage(ChatColor.RED + args[1] + " is not a number.");
+                return false;
+            }
             final Product product = pluginInstance.getStockPrices().get(args[0]);
             if (product == null) {
                 sender.sendMessage(ChatColor.GOLD + "The price of `" + args[0] + "` has not been set yet.");
