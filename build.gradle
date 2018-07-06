@@ -1,0 +1,82 @@
+plugins {
+    id "com.github.hierynomus.license" version "0.14.0"
+}
+
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'eclipse'
+sourceCompatibility = 1.8
+
+group 'net.reallifegames'
+project.ext.baseName = 'sdeconomy'
+version '1.0.0'
+description = 'Minecraft Supply And Demand Economy'
+archivesBaseName = 'sdeconomy'
+
+repositories {
+    mavenCentral()
+    maven {
+        name = 'sponge'
+        url = 'https://repo.spongepowered.org/maven/'
+    }
+    maven {
+        name = 'spigot-repo'
+        url = 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/'
+    }
+    maven {
+        name = 'md5-bungeecord'
+        url = "https://oss.sonatype.org/content/repositories/snapshots/"
+    }
+    maven {
+        name = 'vault-repo'
+        url = "http://nexus.hc.to/content/repositories/pub_releases"
+    }
+}
+
+sourceSets {
+    spigot {
+        java {
+            srcDirs = ['src/spigot/java']
+        }
+        resources {
+            srcDirs = ['src/spigot/resources']
+        }
+    }
+    sponge {
+        java {
+            srcDirs = ['src/sponge/java']
+        }
+        resources {
+            srcDirs = ['src/sponge/resources']
+        }
+    }
+}
+
+dependencies {
+    compile 'com.google.code.findbugs:jsr305:3.0.1'
+
+    spongeCompile 'org.spongepowered:spongeapi:7.0.0'
+    spongeCompile sourceSets.main.output
+
+    spigotCompile 'org.spigotmc:spigot-api:1.12.2-R0.1-SNAPSHOT'
+    spigotCompile 'com.google.code.findbugs:jsr305:3.0.1'
+    spigotCompile 'net.milkbowl.vault:VaultAPI:1.6'
+    spigotCompile sourceSets.main.output
+}
+
+task buildSpigot(type: Jar) {
+    baseName = archivesBaseName + "-spigot"
+    version = version
+    from {
+        sourceSets.main.output + sourceSets.spigot.output
+    }
+}
+
+
+license {
+    header project.file("LICENSE.txt")
+    strictCheck true
+    mapping {
+        java = 'SLASHSTAR_STYLE'
+    }
+}
