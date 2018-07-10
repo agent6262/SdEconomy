@@ -111,6 +111,9 @@ public class SqlService {
         final Connection sqlConnection = DriverManager.getConnection(jdbcUrl);
         // Create table if it does not exist
         sqlConnection.prepareStatement(PRODUCT_TABLE_SQL).execute();
+        // Close objects
+        sqlConnection.commit();
+        sqlConnection.close();
     }
 
     /**
@@ -125,6 +128,9 @@ public class SqlService {
         final Connection sqlConnection = DriverManager.getConnection(jdbcUrl);
         // Create table if it does not exist
         sqlConnection.prepareStatement(TRANSACTION_TABLE_SQL).execute();
+        // Close objects
+        sqlConnection.commit();
+        sqlConnection.close();
     }
 
     /**
@@ -156,6 +162,7 @@ public class SqlService {
                     updateStatement.setString(4, kvp.getKey());
                     // Execute query
                     updateStatement.executeUpdate();
+                    updateStatement.close();
                 } else {
                     // Setup prepared statement
                     final PreparedStatement insertStatement = sqlConnection.prepareStatement(INSERT_PRODUCT_TABLE_SQL);
@@ -167,9 +174,16 @@ public class SqlService {
                     insertStatement.setInt(6, kvp.getValue().demand);
                     // Execute query
                     insertStatement.executeUpdate();
+                    insertStatement.close();
                 }
             }
+            // Close objects
+            results.close();
+            preparedStatement.close();
         }
+        // Close objects
+        sqlConnection.commit();
+        sqlConnection.close();
     }
 
     /**
@@ -195,6 +209,10 @@ public class SqlService {
                     result.getInt("supply"),
                     result.getInt("demand")));
         }
+        // Close objects
+        sqlConnection.commit();
+        result.close();
+        sqlConnection.close();
     }
 
     /**
@@ -221,5 +239,10 @@ public class SqlService {
         insertStatement.setFloat(5, amount);
         // Execute query
         insertStatement.executeUpdate();
+        // Close objects
+        sqlConnection.commit();
+        insertStatement.close();
+        insertStatement.close();
+        sqlConnection.close();
     }
 }
