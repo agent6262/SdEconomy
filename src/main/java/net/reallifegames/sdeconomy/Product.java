@@ -37,6 +37,12 @@ public class Product {
      * The type of this item.
      */
     @Nonnull
+    public final String alias;
+
+    /**
+     * The type of this item.
+     */
+    @Nonnull
     public String type;
 
     /**
@@ -62,9 +68,11 @@ public class Product {
     /**
      * Creates a new item with the price, supply and demand set to 1.
      *
-     * @param type the item type of this product.
+     * @param alias the user friendly name of the item.
+     * @param type  the item type of this product.
      */
-    public Product(@Nonnull final String type) {
+    public Product(@Nonnull final String alias, @Nonnull final String type) {
+        this.alias = alias;
         this.type = type;
         this.unsafeData = 0;
         this.price = 1;
@@ -75,13 +83,15 @@ public class Product {
     /**
      * Creates a new item with a price, supply and demand.
      *
+     * @param alias      the user friendly name of the item.
      * @param type       the item type of this product.
      * @param unsafeData the unsafe data value of this item.
      * @param price      the current price of this item.
      * @param supply     the supply of this item.
      * @param demand     the current demand of this item.
      */
-    public Product(@Nonnull final String type, byte unsafeData, float price, int supply, int demand) {
+    public Product(@Nonnull final String alias, @Nonnull final String type, byte unsafeData, float price, int supply, int demand) {
+        this.alias = alias;
         this.type = type;
         this.unsafeData = unsafeData;
         this.price = price;
@@ -107,8 +117,8 @@ public class Product {
         float returnValue = 0;
         int tSupply = product.supply;
         for (int i = 0; i < amount; i++) {
-            returnValue += product.price * ((float) product.demand / (float) tSupply);
             tSupply++;
+            returnValue += product.price * ((float) product.demand / (float) tSupply);
         }
         return returnValue;
     }
@@ -127,11 +137,11 @@ public class Product {
      */
     public static double sell(@Nonnull Product product, @Nonnull final String jdbcUrl, @Nonnull final String uuid,
                               final int amount) throws SQLException {
-        SqlService.insertTransaction(jdbcUrl, uuid, SqlService.SELL_ACTION, product.type, product.unsafeData, amount);
+        SqlService.insertTransaction(jdbcUrl, uuid, SqlService.SELL_ACTION, product.alias, amount);
         float returnValue = 0;
         for (int i = 0; i < amount; i++) {
-            returnValue += product.price * ((float) product.demand / (float) product.supply);
             product.supply++;
+            returnValue += product.price * ((float) product.demand / (float) product.supply);
         }
         return returnValue;
     }
@@ -167,7 +177,7 @@ public class Product {
      */
     public static double buy(@Nonnull Product product, @Nonnull final String jdbcUrl, @Nonnull final String uuid,
                              final int amount) throws SQLException {
-        SqlService.insertTransaction(jdbcUrl, uuid, SqlService.BUY_ACTION, product.type, product.unsafeData, amount);
+        SqlService.insertTransaction(jdbcUrl, uuid, SqlService.BUY_ACTION, product.alias, amount);
         float returnValue = 0;
         for (int i = 0; i < amount; i++) {
             returnValue += product.price * ((float) product.demand / (float) product.supply);
@@ -188,7 +198,7 @@ public class Product {
      */
     public static void setPrice(@Nonnull Product product, @Nonnull final String jdbcUrl, @Nonnull final String uuid,
                                 final float price) throws SQLException {
-        SqlService.insertTransaction(jdbcUrl, uuid, SqlService.SET_ACTION, product.type, product.unsafeData, price);
+        SqlService.insertTransaction(jdbcUrl, uuid, SqlService.SET_ACTION, product.alias, price);
         product.price = price;
     }
 }

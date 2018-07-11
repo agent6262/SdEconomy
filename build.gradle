@@ -35,29 +35,24 @@ repositories {
 
 sourceSets {
     spigot {
-        java {
-            srcDirs = ['src/spigot/java']
-        }
-        resources {
-            srcDirs = ['src/spigot/resources']
-        }
+        java.srcDirs = ['src/spigot/java']
+        resources.srcDirs = ['src/spigot/resources']
     }
     sponge {
-        java {
-            srcDirs = ['src/sponge/java']
-        }
-        resources {
-            srcDirs = ['src/sponge/resources']
-        }
+        java.srcDirs = ['src/sponge/java']
+        resources.srcDirs = ['src/sponge/resources']
     }
 }
 
 dependencies {
     compile 'com.google.code.findbugs:jsr305:3.0.1'
+    compile "com.sparkjava:spark-core:2.7.2"
 
+    spongeCompile 'com.google.code.findbugs:jsr305:3.0.1'
     spongeCompile 'org.spongepowered:spongeapi:7.0.0'
     spongeCompile sourceSets.main.output
 
+    spigotCompile 'com.google.code.findbugs:jsr305:3.0.1'
     spigotCompile 'org.spigotmc:spigot-api:1.12.2-R0.1-SNAPSHOT'
     spigotCompile 'com.google.code.findbugs:jsr305:3.0.1'
     spigotCompile 'net.milkbowl.vault:VaultAPI:1.6'

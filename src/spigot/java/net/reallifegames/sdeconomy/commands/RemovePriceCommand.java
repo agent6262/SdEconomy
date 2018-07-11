@@ -25,30 +25,33 @@ package net.reallifegames.sdeconomy.commands;
 
 import net.reallifegames.sdeconomy.Product;
 import net.reallifegames.sdeconomy.SdEconomy;
+import net.reallifegames.sdeconomy.SqlService;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 
 import javax.annotation.Nonnull;
+import java.sql.SQLException;
+import java.util.logging.Level;
 
 /**
- * Attempts to get the price of an item.
+ * Removes a price from the server.
  *
- * @author Tyler Bucher.
+ * @author Tyler Bucher
  */
-public class GetPriceCommand extends BaseCommand {
+public class RemovePriceCommand extends BaseCommand {
 
     /**
      * Creates a new base command listener.
      *
      * @param pluginInstance the {@link SdEconomy} plugin instance.
      */
-    public GetPriceCommand(@Nonnull final SdEconomy pluginInstance) {
+    public RemovePriceCommand(@Nonnull final SdEconomy pluginInstance) {
         super(pluginInstance);
     }
 
     /**
-     * Executes the given command, returning its success.
+     * Executes the given command, returning its success
      *
      * @param sender  source of the command.
      * @param command command which was executed.
@@ -64,11 +67,20 @@ public class GetPriceCommand extends BaseCommand {
             return false;
         }
         // Get item price
+        args[0] = args[0].toLowerCase();
         final Product product = pluginInstance.getStockPrices().get(args[0]);
         if (product == null) {
             sender.sendMessage(ChatColor.GOLD + "The price of `" + args[0] + "` has not been set yet.");
         } else {
-            sender.sendMessage(ChatColor.GOLD + "The price of `" + args[0] + "` is: " + product.getPrice());
+            try {
+                SqlService.deleteItemFromSdPrices(pluginInstance.getConfig().getString("jdbcUrl"), args[0]);
+            } catch (SQLException e) {
+                pluginInstance.getLogger().log(Level.SEVERE, "Unable to access database.", e);
+                sender.sendMessage(ChatColor.RED + "Error removing item.");
+                return true;
+            }
+            pluginInstance.getStockPrices().remove(args[0]);
+            sender.sendMessage(ChatColor.GOLD + "The item `" + args[0] + "` has been removed.");
         }
         return true;
     }

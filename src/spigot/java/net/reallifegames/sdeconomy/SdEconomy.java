@@ -99,13 +99,15 @@ public class SdEconomy extends JavaPlugin {
         for (final Material material : Material.values()) {
             if (material.isItem()) {
                 if (populateDatabase) {
-                    stockPrices.computeIfAbsent(material.name(), k->new Product(material.name()));
+                    stockPrices.computeIfAbsent(material.name(), k->new Product(material.name().toLowerCase(), material.name()));
                 }
             }
         }
         try {
+            SqlService.updateToSqlV2(jdbcUrl);
             SqlService.createProductTable(jdbcUrl);
             SqlService.createTransactionTable(jdbcUrl);
+            SqlService.createConstantsTable(jdbcUrl);
             SqlService.readProductTable(jdbcUrl, stockPrices);
         } catch (SQLException e) {
             getLogger().log(Level.SEVERE, "Error accessing database. Plugin not loaded", e);
@@ -113,6 +115,8 @@ public class SdEconomy extends JavaPlugin {
         // Register commands
         // Set price command
         this.getCommand("setprice").setExecutor(new SetPriceCommand(this));
+        // Remove price command
+        this.getCommand("removeprice").setExecutor(new RemovePriceCommand(this));
         // Get price command
         this.getCommand("getprice").setExecutor(new GetPriceCommand(this));
         // Check sell command

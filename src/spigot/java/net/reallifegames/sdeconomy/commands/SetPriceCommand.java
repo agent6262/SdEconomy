@@ -85,8 +85,9 @@ public class SetPriceCommand extends BaseCommand {
                 return false;
             }
             itemTypeInfo[0] = itemTypeInfo[0].toUpperCase();
+            args[0] = args[0].toLowerCase();
             final Product product = pluginInstance.getStockPrices().computeIfAbsent(args[0],
-                    k->new Product(itemTypeInfo[0]));
+                    k->new Product(args[0], itemTypeInfo[0]));
             product.type = itemTypeInfo[0];
             product.unsafeData = unsafeData;
             try {

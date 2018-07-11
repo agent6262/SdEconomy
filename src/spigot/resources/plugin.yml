@@ -33,6 +33,10 @@ commands:
     description: Sets the price of an item
     permission: sdeconomy.command.setprice
     usage: /<command> [alias] [itemtype:data] [price]
+  removeprice:
+    description: Removes the price of an item
+    permission: sdeconomy.command.removeprice
+    usage: /<command> [alias]
   getprice:
     description: Gets the price of an item
     permission: sdeconomy.command.getprice
