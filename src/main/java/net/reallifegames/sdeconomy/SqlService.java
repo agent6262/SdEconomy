@@ -178,7 +178,7 @@ public class SqlService {
     @Nonnull
     public static final String SEARCH_USERS_TRANSACTIONS = "SELECT `sd_transaction`.`action`, `sd_prices`.`alias`, " +
             "`sd_transaction`.`date`, `sd_transaction`.`amount` FROM `sd_transaction` INNER JOIN `sd_prices` ON " +
-            "`sd_prices`.`id`=`sd_transaction`.`price_id` WHERE `sd_transaction`.`uuid`=? LIMIT ?,20;";
+            "`sd_prices`.`id`=`sd_transaction`.`price_id` WHERE `sd_transaction`.`uuid`=? ORDER BY `sd_transaction`.`date` DESC LIMIT ?,20;";
 
     /**
      * Checks to see if all of the tables passed exist in the database.
