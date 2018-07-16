@@ -71,7 +71,7 @@ public class TransactionCommand extends BaseCommand {
         final int pageNumber;
         try {
             int parse = Integer.parseInt(args[1]) - 1;
-            pageNumber = parse < 1 ? 1 : parse;
+            pageNumber = parse < 0 ? 0 : parse;
         } catch (NumberFormatException | NullPointerException e) {
             sender.sendMessage(ChatColor.RED + args[1] + " is not a number.");
             return false;
