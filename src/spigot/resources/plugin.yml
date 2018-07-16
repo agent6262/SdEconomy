@@ -60,4 +60,4 @@ commands:
   transactions:
     description: Checks a users transactions
     permission: sdeconomy.command.transactions
-    usage: /<command> [playername] [pagenumber]
+    usage: /<command> [playeruuid] [pagenumber]

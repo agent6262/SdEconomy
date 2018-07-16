@@ -62,53 +62,48 @@ public class TransactionCommand extends BaseCommand {
      */
     @Override
     public boolean onCommand(final CommandSender sender, final Command command, final String label, final String[] args) {
-        if (sender instanceof Player) {
-            final Player player = (Player) sender;
-            // Check for arg length
-            if (args.length != 2) {
-                sender.sendMessage(ChatColor.RED + "You need to specify the player name and page number.");
-                return false;
-            }
-            // Get amount of an item
-            final int pageNumber;
-            try {
-                pageNumber = Integer.parseInt(args[1]);
-            } catch (NumberFormatException | NullPointerException e) {
-                sender.sendMessage(ChatColor.RED + args[1] + " is not a number.");
-                return false;
-            }
-            // Connect to database
-            try {
-                final Connection sqlConnection = DriverManager.getConnection(pluginInstance.getConfig().getString("jdbcUrl"));
-                // Setup prepared statement
-                final PreparedStatement searchStatement = sqlConnection.prepareStatement(SEARCH_USERS_TRANSACTIONS);
-                searchStatement.setString(1, args[0]);
-                searchStatement.setInt(2, pageNumber);
-                // Execute query
-                final ResultSet resultSet = searchStatement.executeQuery();
-                boolean returns = false;
-                while (resultSet.next()) {
-                    returns = true;
-                    sender.sendMessage(getTextAction(resultSet.getInt("action")) + " " +
-                            resultSet.getString("alias") + " " + resultSet.getString("date")
-                            + " " + resultSet.getFloat("amount"));
-                }
-                // Close objects
-                resultSet.close();
-                searchStatement.close();
-                sqlConnection.close();
-                if (!returns) {
-                    sender.sendMessage("Player has not interacted with the economy yet.");
-                }
-                return true;
-            } catch (SQLException e) {
-                pluginInstance.getLogger().log(Level.SEVERE, "Unable to access database.", e);
-                sender.sendMessage(ChatColor.RED + "Error connecting to db.");
-                return true;
-            }
-        } else {
-            sender.sendMessage(ChatColor.RED + "You must be a player to run this command.");
+        // Check for arg length
+        if (args.length != 2) {
+            sender.sendMessage(ChatColor.RED + "You need to specify the player uuid and page number.");
             return false;
+        }
+        // Get amount of an item
+        final int pageNumber;
+        try {
+            int parse = Integer.parseInt(args[1]) - 1;
+            pageNumber = parse < 1 ? 1 : parse;
+        } catch (NumberFormatException | NullPointerException e) {
+            sender.sendMessage(ChatColor.RED + args[1] + " is not a number.");
+            return false;
+        }
+        // Connect to database
+        try {
+            final Connection sqlConnection = DriverManager.getConnection(pluginInstance.getConfig().getString("jdbcUrl"));
+            // Setup prepared statement
+            final PreparedStatement searchStatement = sqlConnection.prepareStatement(SEARCH_USERS_TRANSACTIONS);
+            searchStatement.setString(1, args[0]);
+            searchStatement.setInt(2, pageNumber - 1);
+            // Execute query
+            final ResultSet resultSet = searchStatement.executeQuery();
+            boolean returns = false;
+            while (resultSet.next()) {
+                returns = true;
+                sender.sendMessage(getTextAction(resultSet.getInt("action")) + " " +
+                        resultSet.getString("alias") + " " + resultSet.getString("date")
+                        + " " + resultSet.getFloat("amount"));
+            }
+            // Close objects
+            resultSet.close();
+            searchStatement.close();
+            sqlConnection.close();
+            if (!returns) {
+                sender.sendMessage("Player has no rows for this page number or has not interacted with the economy yet.");
+            }
+            return true;
+        } catch (SQLException e) {
+            pluginInstance.getLogger().log(Level.SEVERE, "Unable to access database.", e);
+            sender.sendMessage(ChatColor.RED + "Error connecting to db.");
+            return true;
         }
     }
 
