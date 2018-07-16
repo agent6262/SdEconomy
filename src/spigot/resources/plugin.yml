@@ -23,7 +23,7 @@
 #
 
 name: SdEconomy
-version: 1.0.0
+version: 2.0.0
 main: net.reallifegames.sdeconomy.SdEconomy
 author: agent6262
 depend: [Vault]
@@ -57,3 +57,7 @@ commands:
     description: Buys an item from the server
     permission: sdeconomy.command.buy
     usage: /<command> [itemname] [ammount]
+  transactions:
+    description: Checks a users transactions
+    permission: sdeconomy.command.transactions
+    usage: /<command> [playername] [pagenumber]

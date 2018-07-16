@@ -34,8 +34,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 
 /**
@@ -44,11 +47,6 @@ import java.util.logging.Level;
  * @author Tyler Bucher
  */
 public class SdEconomy extends JavaPlugin {
-
-    /**
-     * The price map for the products.
-     */
-    private HashMap<String, Product> stockPrices = null;
 
     /**
      * The economy service provided by vault.
@@ -60,8 +58,6 @@ public class SdEconomy extends JavaPlugin {
      */
     @Override
     public void onEnable() {
-        // Load plugin and prices
-        stockPrices = new HashMap<>();
         // Get the config
         final FileConfiguration config = this.getConfig();
         // Check to see if the jdbc url is present
@@ -70,14 +66,18 @@ public class SdEconomy extends JavaPlugin {
         final boolean populateDatabase = config.getBoolean("populateDatabase");
         // The save interval for the prices.
         final long interval = config.getLong("saveInterval");
-        if (jdbcUrl == null) {
-            config.addDefault("jdbcUrl", "jdbc:mysql://<host>:<port>/<db>?user=<user>&password=<password>&useSSL=false");
-            config.addDefault("populateDatabase", false);
-            config.addDefault("saveInterval", 6000);
-            config.options().copyDefaults(true);
-            saveConfig();
-            return;
-        }
+        // The decay interval
+        final long demandDecayInterval = config.getLong("saveInterval");
+        // The decay amount
+        final int demandDecayAmount = config.getInt("demandDecayAmount");
+        // Config defaults
+        config.addDefault("jdbcUrl", "jdbc:mysql://<host>:<port>/<db>?user=<user>&password=<password>&useSSL=false");
+        config.addDefault("populateDatabase", false);
+        config.addDefault("saveInterval", 6000);
+        config.addDefault("demandDecayInterval", 24000);
+        config.addDefault("demandDecayAmount", 64);
+        config.options().copyDefaults(true);
+        saveConfig();
         // Get vault plugin
         if (this.getServer().getPluginManager().getPlugin("Vault") == null) {
             this.getLogger().log(Level.SEVERE, "Vault plugin not found. Plugin not loaded");
@@ -96,10 +96,10 @@ public class SdEconomy extends JavaPlugin {
             return;
         }
         // Load material names
-        for (final Material material : Material.values()) {
-            if (material.isItem()) {
-                if (populateDatabase) {
-                    stockPrices.computeIfAbsent(material.name(), k->new Product(material.name().toLowerCase(), material.name()));
+        if (populateDatabase) {
+            for (final Material material : Material.values()) {
+                if (material.isItem()) {
+                    Product.stockPrices.computeIfAbsent(material.name(), k->new Product(material.name().toLowerCase(), material.name()));
                 }
             }
         }
@@ -107,10 +107,13 @@ public class SdEconomy extends JavaPlugin {
             SqlService.updateToSqlV2(jdbcUrl);
             SqlService.createProductTable(jdbcUrl);
             SqlService.createTransactionTable(jdbcUrl);
+            SqlService.updateToSqlV3(jdbcUrl);
             SqlService.createConstantsTable(jdbcUrl);
-            SqlService.readProductTable(jdbcUrl, stockPrices);
+            SqlService.updateToSqlV4(jdbcUrl);
+            SqlService.readProductTable(jdbcUrl, Product.stockPrices);
         } catch (SQLException e) {
             getLogger().log(Level.SEVERE, "Error accessing database. Plugin not loaded", e);
+            return;
         }
         // Register commands
         // Set price command
@@ -127,15 +130,46 @@ public class SdEconomy extends JavaPlugin {
         this.getCommand("sell").setExecutor(new SellCommand(this));
         // Buy command
         this.getCommand("buy").setExecutor(new BuyCommand(this));
+        // Transaction command
+        this.getCommand("transactions").setExecutor(new TransactionCommand(this));
         // Create repeating save task
         Bukkit.getScheduler().scheduleSyncRepeatingTask(this, ()->{
             // Attempt to save item data
             try {
-                SqlService.updateProductTable(jdbcUrl, stockPrices);
+                SqlService.updateProductTable(jdbcUrl, Product.stockPrices);
             } catch (SQLException e) {
                 getLogger().log(Level.SEVERE, "Error accessing database", e);
             }
-        }, 80, interval);
+        }, 0, interval);
+        // Create repeating decay task
+        Bukkit.getScheduler().scheduleSyncRepeatingTask(this, ()->{
+            try {
+                // Connect to database
+                final Connection sqlConnection = DriverManager.getConnection(jdbcUrl);
+                sqlConnection.setAutoCommit(false);
+                final PreparedStatement insertStatement = sqlConnection.prepareStatement(SqlService.INSERT_TRANSACTION_TABLE_SQL);
+                // Attempt decay product demand
+                for (Product product : Product.stockPrices.values()) {
+                    final int amount = Product.decayDemand(product, demandDecayAmount);
+                    if (amount > 0) {
+                        // Setup prepared statement
+                        insertStatement.setString(1, SqlService.SYSTEM_UUID);
+                        insertStatement.setByte(2, SqlService.DECAY_ACTION);
+                        insertStatement.setString(3, product.alias);
+                        insertStatement.setFloat(4, amount);
+                        // Execute query
+                        insertStatement.addBatch();
+                    }
+                }
+                // Close objects
+                insertStatement.executeBatch();
+                sqlConnection.commit();
+                insertStatement.close();
+                sqlConnection.close();
+            } catch (SQLException e) {
+                getLogger().log(Level.SEVERE, "Error accessing database", e);
+            }
+        }, demandDecayInterval, demandDecayInterval);
     }
 
     /**
@@ -152,7 +186,7 @@ public class SdEconomy extends JavaPlugin {
         }
         // Attempt to save item data
         try {
-            SqlService.updateProductTable(jdbcUrl, stockPrices);
+            SqlService.updateProductTable(jdbcUrl, Product.stockPrices);
         } catch (SQLException e) {
             getLogger().log(Level.SEVERE, "Error accessing database", e);
         }
@@ -166,7 +200,7 @@ public class SdEconomy extends JavaPlugin {
      */
     @Nullable
     public Product getProductFromItemStack(@Nonnull final ItemStack itemStack) {
-        for (Product product : stockPrices.values()) {
+        for (Product product : Product.stockPrices.values()) {
             // if the item stack type and unsafeData equal the products then return it.
             if (product.type.equalsIgnoreCase(itemStack.getType().name()) && product.unsafeData == itemStack.getData().getData()) {
                 return product;
@@ -178,8 +212,8 @@ public class SdEconomy extends JavaPlugin {
     /**
      * @return the price map for the products.
      */
-    public HashMap<String, Product> getStockPrices() {
-        return stockPrices;
+    public ConcurrentMap<String, Product> getStockPrices() {
+        return Product.stockPrices;
     }
 
     /**

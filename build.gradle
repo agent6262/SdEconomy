@@ -46,7 +46,6 @@ sourceSets {
 
 dependencies {
     compile 'com.google.code.findbugs:jsr305:3.0.1'
-    compile "com.sparkjava:spark-core:2.7.2"
 
     spongeCompile 'com.google.code.findbugs:jsr305:3.0.1'
     spongeCompile 'org.spongepowered:spongeapi:7.0.0'
@@ -54,7 +53,6 @@ dependencies {
 
     spigotCompile 'com.google.code.findbugs:jsr305:3.0.1'
     spigotCompile 'org.spigotmc:spigot-api:1.12.2-R0.1-SNAPSHOT'
-    spigotCompile 'com.google.code.findbugs:jsr305:3.0.1'
     spigotCompile 'net.milkbowl.vault:VaultAPI:1.6'
     spigotCompile sourceSets.main.output
 }
@@ -66,7 +64,6 @@ task buildSpigot(type: Jar) {
         sourceSets.main.output + sourceSets.spigot.output
     }
 }
-
 
 license {
     header project.file("LICENSE.txt")

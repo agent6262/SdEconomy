@@ -25,7 +25,10 @@ package net.reallifegames.sdeconomy;
 
 import javax.annotation.Nonnull;
 import java.sql.*;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Manages universal sql query's for multiple plugin APIs.
@@ -37,7 +40,7 @@ public class SqlService {
     /**
      * The current sql version of this plugin.
      */
-    public static final int SQL_VERSION = 2;
+    public static final int SQL_VERSION = 4;
 
     /**
      * Checks to see if a table exists.
@@ -53,33 +56,28 @@ public class SqlService {
             "WHERE `constraint_name` = ?);";
 
     /**
+     * Gets the type of a column.
+     */
+    @Nonnull
+    private static final String GET_COLUMN_TYPE = "SELECT `DATA_TYPE` FROM `INFORMATION_SCHEMA`.`COLUMNS` WHERE " +
+            "TABLE_NAME=? AND COLUMN_NAME=?;";
+
+    /**
      * The product table creation sql query string.
      */
     @Nonnull
     private static final String PRODUCT_TABLE_SQL = "CREATE TABLE IF NOT EXISTS `sd_prices` (`id` int(11) NOT NULL " +
             "AUTO_INCREMENT, `alias` VARCHAR(255) NOT NULL, `name` VARCHAR(255) NOT NULL, `unsafeData` TINYINT(4) " +
             "DEFAULT '0', `price` FLOAT NOT NULL, `supply` INT NOT NULL, `demand` INT NOT NULL, PRIMARY KEY (`id`), " +
-            "UNIQUE KEY `alias_2` (`alias`), KEY `name` (`name`), KEY `alias` (`alias`)) ENGINE = InnoDB;";
+            "UNIQUE KEY `alias_2` (`alias`), KEY `alias` (`alias`)) ENGINE = InnoDB;";
 
     /**
-     * The product table update sql query string.
+     * The product table insert and update sql query string.
      */
     @Nonnull
-    private static final String UPDATE_PRODUCT_TABLE_SQL = "UPDATE `sd_prices` SET `name`=?,`unsafeData`=?,`price`=?," +
-            "`supply`=?, `demand`=? WHERE LOWER(`alias`)=?";
-
-    /**
-     * The product table insert sql query string.
-     */
-    @Nonnull
-    private static final String INSERT_PRODUCT_TABLE_SQL = "INSERT INTO `sd_prices`(`alias`, `name`, `unsafeData`, " +
-            "`price`, `supply`, `demand`) VALUES (?,?,?,?,?,?)";
-
-    /**
-     * Checks to see if a row exists.
-     */
-    @Nonnull
-    private static final String EXIST_PRODUCT_TABLE_SQL = "SELECT EXISTS(SELECT 1 FROM `sd_prices` where LOWER(`alias`)=?);";
+    private static final String INSERT_UPDATE_PRODUCT_TABLE_SQL = "INSERT INTO `sd_prices`(`alias`, `name`, " +
+            "`unsafeData`, `price`, `supply`, `demand`) VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE " +
+            "`name`=?,`unsafeData`=?,`price`=?,`supply`=?, `demand`=?;";
 
     /**
      * The product table select sql query string.
@@ -91,7 +89,7 @@ public class SqlService {
      * The product table delete sql query string.
      */
     @Nonnull
-    private static final String DELETE_PRODUCT_TABLE_SQL = "DELETE FROM `sd_prices` WHERE LOWER(`alias`) = ?;";
+    private static final String DELETE_PRODUCT_TABLE_SQL = "DELETE FROM `sd_prices` WHERE `alias` = ?;";
 
     /**
      * The economy transaction table.
@@ -100,7 +98,7 @@ public class SqlService {
     private static final String TRANSACTION_TABLE_SQL = "CREATE TABLE IF NOT EXISTS `sd_transaction` (`uuid` char(36) " +
             "NOT NULL,`action` tinyint(4) NOT NULL,`price_id` int(11) NOT NULL,`date` timestamp NOT NULL DEFAULT " +
             "CURRENT_TIMESTAMP,`amount` float NOT NULL, KEY `uuid` (`uuid`), KEY `action` (`action`), KEY `price_id` " +
-            "(`price_id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
+            "(`price_id`), KEY `date` (`date`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
 
     /**
      * The economy transaction table fk sql.
@@ -113,7 +111,7 @@ public class SqlService {
      * The transaction table insert sql query string.
      */
     @Nonnull
-    private static final String INSERT_TRANSACTION_TABLE_SQL = "INSERT INTO `sd_transaction`(`uuid`, `action`, " +
+    public static final String INSERT_TRANSACTION_TABLE_SQL = "INSERT INTO `sd_transaction`(`uuid`, `action`, " +
             "`price_id`, `amount`) VALUES (?,?,(SELECT `id` FROM `sd_prices` WHERE LOWER(`alias`)=?),?);";
 
     /**
@@ -132,16 +130,28 @@ public class SqlService {
     public static final byte SELL_ACTION = 2;
 
     /**
+     * The demand decay action for the transaction table.
+     */
+    public static final byte DECAY_ACTION = 3;
+
+    /**
+     * The uuid of the system. Used in transaction table.
+     */
+    @Nonnull
+    public static final String SYSTEM_UUID = "00000000-0000-0000-0000-000000000000";
+
+    /**
      * The product table creation sql query string.
      */
     @Nonnull
-    private static final String CONSTANTS_TABLE_SQL = "CREATE TABLE IF NOT EXISTS `sd_constants` (`kkey` int(11) NOT " +
+    private static final String CONSTANTS_TABLE_SQL = "CREATE TABLE IF NOT EXISTS `sd_constants` (`kkey` VARCHAR(255) NOT " +
             "NULL, `value` VARCHAR(255) NOT NULL, PRIMARY KEY (`kkey`)) ENGINE = InnoDB;";
 
     /**
      * The sql version constant.
      */
-    public static final byte SQL_VERSION_CONSTANT = 0;
+    @Nonnull
+    public static final String SQL_VERSION_CONSTANT = "sql_version";
 
     /**
      * The constants table select sql version query string.
@@ -150,11 +160,25 @@ public class SqlService {
     private static final String SELECT_SQL_VERSION = "SELECT `value` FROM `sd_constants` WHERE `kkey`=?;";
 
     /**
-     * The constants table select sql version query string.
+     * The insert update sql version query string.
      */
     @Nonnull
     private static final String INSERT_UPDATE_SQL_VERSION = "INSERT INTO `sd_constants`(`kkey`, `value`) VALUES (?,?) " +
             "ON DUPLICATE KEY UPDATE `kkey` = `kkey`;";
+
+    /**
+     * Searches for keys in an array.
+     */
+    @Nonnull
+    private static final String SEARCH_KEYS_IN_CONSTANTS = "SELECT `kkey`, `value` FROM `sd_constants` WHERE `kkey` IN ";
+
+    /**
+     * Searches for a users transactions.
+     */
+    @Nonnull
+    public static final String SEARCH_USERS_TRANSACTIONS = "SELECT `sd_transaction`.`action`, `sd_prices`.`alias`, " +
+            "`sd_transaction`.`date`, `sd_transaction`.`amount` FROM `sd_transaction` INNER JOIN `sd_prices` ON " +
+            "`sd_prices`.`id`=`sd_transaction`.`price_id` WHERE `sd_transaction`.`uuid`=? LIMIT ?,20;";
 
     /**
      * Checks to see if all of the tables passed exist in the database.
@@ -237,7 +261,53 @@ public class SqlService {
     }
 
     /**
-     * gets the sql version of the database.
+     * Updates the database from version 2 to version 3.
+     *
+     * @param jdbcUrl the url of the database.
+     * @throws SQLException if a database access error occurs; this method is called on a closed PreparedStatement or an
+     *                      argument is supplied to this method. If a database access error occurs or the url is null.
+     */
+    public static void updateToSqlV3(@Nonnull final String jdbcUrl) throws SQLException {
+        if (tablesExits(jdbcUrl, "sd_constants") &&
+                getSqlType(jdbcUrl, "sd_constants", "kkey").equalsIgnoreCase("int")) {
+            final Connection sqlConnection = DriverManager.getConnection(jdbcUrl);
+            // sd_constants table
+            sqlConnection.prepareStatement("TRUNCATE `sd_constants`").execute();
+            sqlConnection.prepareStatement("ALTER TABLE `sd_constants` CHANGE `kkey` `kkey` VARCHAR(255) NOT NULL;").execute();
+            // Close objects
+            sqlConnection.close();
+        }
+    }
+
+    /**
+     * Updates the database from version 3 to version 4.
+     *
+     * @param jdbcUrl the url of the database.
+     * @throws SQLException if a database access error occurs; this method is called on a closed PreparedStatement or an
+     *                      argument is supplied to this method. If a database access error occurs or the url is null.
+     */
+    public static void updateToSqlV4(@Nonnull final String jdbcUrl) throws SQLException {
+        final int sqlVersion = getSqlVersion(jdbcUrl);
+        if (sqlVersion == 3 || sqlVersion == -1) {
+            final Connection sqlConnection = DriverManager.getConnection(jdbcUrl);
+            // sd_price table
+            sqlConnection.prepareStatement("DROP INDEX `name` ON `sd_prices`;").execute();
+            sqlConnection.prepareStatement("UPDATE `sd_prices` SET `alias`=LOWER(`alias`);").execute();
+            // sd_transaction table
+            sqlConnection.prepareStatement("ALTER TABLE `sd_transaction` ADD INDEX(`date`);").execute();
+            // Update sql version
+            final PreparedStatement updateStatement = sqlConnection.prepareStatement(INSERT_UPDATE_SQL_VERSION);
+            updateStatement.setString(1, SQL_VERSION_CONSTANT);
+            updateStatement.setString(2, String.valueOf(SQL_VERSION));
+            updateStatement.executeUpdate();
+            updateStatement.close();
+            // Close objects
+            sqlConnection.close();
+        }
+    }
+
+    /**
+     * Gets the sql version of the database.
      *
      * @param jdbcUrl the url of the database.
      * @return the sql version of the database or -1 if it is not set.
@@ -249,9 +319,34 @@ public class SqlService {
         final Connection sqlConnection = DriverManager.getConnection(jdbcUrl);
         // sd_price table
         final PreparedStatement preparedStatement = sqlConnection.prepareStatement(SELECT_SQL_VERSION);
-        preparedStatement.setInt(1, SQL_VERSION_CONSTANT);
+        preparedStatement.setString(1, SQL_VERSION_CONSTANT);
         final ResultSet results = preparedStatement.executeQuery();
         final int returnVal = results.next() ? Integer.parseInt(results.getString(1)) : -1;
+        // Close objects
+        sqlConnection.close();
+        return returnVal;
+    }
+
+    /**
+     * Gets the sql type of a database column.
+     *
+     * @param jdbcUrl   the url of the database.
+     * @param tableName the name of the table to check.
+     * @param column    the name of a column which belongs to the passed table.
+     * @return the sql version of the database or -1 if it is not set.
+     *
+     * @throws SQLException if a database access error occurs; this method is called on a closed PreparedStatement or an
+     *                      argument is supplied to this method. If a database access error occurs or the url is null
+     */
+    @Nonnull
+    private static String getSqlType(@Nonnull final String jdbcUrl, @Nonnull final String tableName, @Nonnull final String column) throws SQLException {
+        final Connection sqlConnection = DriverManager.getConnection(jdbcUrl);
+        // sd_price table
+        final PreparedStatement preparedStatement = sqlConnection.prepareStatement(GET_COLUMN_TYPE);
+        preparedStatement.setString(1, tableName);
+        preparedStatement.setString(2, column);
+        final ResultSet results = preparedStatement.executeQuery();
+        final String returnVal = results.next() ? results.getString(1) : "";
         // Close objects
         sqlConnection.close();
         return returnVal;
@@ -304,8 +399,23 @@ public class SqlService {
         final Connection sqlConnection = DriverManager.getConnection(jdbcUrl);
         // Create table if it does not exist
         sqlConnection.prepareStatement(CONSTANTS_TABLE_SQL).execute();
+        // Close objects
+        sqlConnection.close();
+    }
+
+    /**
+     * Attempts to set the sql version.
+     *
+     * @param jdbcUrl the url of the database.
+     * @throws SQLException if a database access error occurs; this method is called on a closed PreparedStatement or an
+     *                      argument is supplied to this method. If a database access error occurs or the url is null.
+     */
+    public static void setSqlVersion(@Nonnull final String jdbcUrl) throws SQLException {
+        // Connect to table
+        final Connection sqlConnection = DriverManager.getConnection(jdbcUrl);
+        // Create table if it does not exist
         final PreparedStatement updateStatement = sqlConnection.prepareStatement(INSERT_UPDATE_SQL_VERSION);
-        updateStatement.setInt(1, SQL_VERSION_CONSTANT);
+        updateStatement.setString(1, SQL_VERSION_CONSTANT);
         updateStatement.setString(2, String.valueOf(SQL_VERSION));
         updateStatement.executeUpdate();
         updateStatement.close();
@@ -321,49 +431,65 @@ public class SqlService {
      * @throws SQLException if a database access error occurs; this method is called on a closed PreparedStatement or an
      *                      argument is supplied to this method. If a database access error occurs or the url is null.
      */
-    public static void updateProductTable(@Nonnull final String jdbcUrl, @Nonnull final Map<String, Product> productMap)
+    public static void updateProductTable(@Nonnull final String jdbcUrl, @Nonnull final ConcurrentMap<String, Product> productMap)
             throws SQLException {
         // Connect to database
         final Connection sqlConnection = DriverManager.getConnection(jdbcUrl);
+        sqlConnection.setAutoCommit(false);
+        final PreparedStatement updateStatement = sqlConnection.prepareStatement(INSERT_UPDATE_PRODUCT_TABLE_SQL);
         // Traverse product map
         for (final Map.Entry<String, Product> kvp : productMap.entrySet()) {
-            final PreparedStatement preparedStatement = sqlConnection.prepareStatement(EXIST_PRODUCT_TABLE_SQL);
-            // Set parameters
-            preparedStatement.setString(1, kvp.getKey());
-            // Execute query
-            final ResultSet results = preparedStatement.executeQuery();
-            if (results.next()) {
-                if (results.getBoolean(1)) {
-                    // Setup prepared statement
-                    final PreparedStatement updateStatement = sqlConnection.prepareStatement(UPDATE_PRODUCT_TABLE_SQL);
-                    updateStatement.setString(1, kvp.getValue().type);
-                    updateStatement.setByte(2, kvp.getValue().unsafeData);
-                    updateStatement.setFloat(3, kvp.getValue().getPrice());
-                    updateStatement.setInt(4, kvp.getValue().supply);
-                    updateStatement.setInt(5, kvp.getValue().demand);
-                    updateStatement.setString(6, kvp.getKey());
-                    // Execute query
-                    updateStatement.executeUpdate();
-                    updateStatement.close();
-                } else {
-                    // Setup prepared statement
-                    final PreparedStatement insertStatement = sqlConnection.prepareStatement(INSERT_PRODUCT_TABLE_SQL);
-                    insertStatement.setString(1, kvp.getKey());
-                    insertStatement.setString(2, kvp.getValue().type);
-                    insertStatement.setByte(3, kvp.getValue().unsafeData);
-                    insertStatement.setFloat(4, kvp.getValue().getPrice());
-                    insertStatement.setInt(5, kvp.getValue().supply);
-                    insertStatement.setInt(6, kvp.getValue().demand);
-                    // Execute query
-                    insertStatement.executeUpdate();
-                    insertStatement.close();
-                }
-            }
-            // Close objects
-            results.close();
-            preparedStatement.close();
+            // Setup prepared statement
+            updateStatement.setString(1, kvp.getValue().alias);
+            updateStatement.setString(2, kvp.getValue().type);
+            updateStatement.setByte(3, kvp.getValue().unsafeData);
+            updateStatement.setFloat(4, kvp.getValue().getPrice());
+            updateStatement.setInt(5, kvp.getValue().supply);
+            updateStatement.setInt(6, kvp.getValue().demand);
+            // update
+            updateStatement.setString(7, kvp.getValue().type);
+            updateStatement.setByte(8, kvp.getValue().unsafeData);
+            updateStatement.setFloat(9, kvp.getValue().getPrice());
+            updateStatement.setInt(10, kvp.getValue().supply);
+            updateStatement.setInt(11, kvp.getValue().demand);
+            updateStatement.addBatch();
         }
+        updateStatement.executeBatch();
+        sqlConnection.commit();
         // Close objects
+        updateStatement.close();
+        sqlConnection.close();
+    }
+
+    /**
+     * Attempt to update the product table with the current product from memory.
+     *
+     * @param jdbcUrl the url of the database.
+     * @param product the products which live in memory.
+     * @throws SQLException if a database access error occurs; this method is called on a closed PreparedStatement or an
+     *                      argument is supplied to this method. If a database access error occurs or the url is null.
+     */
+    public static void updateProduct(@Nonnull final String jdbcUrl, @Nonnull final Product product) throws SQLException {
+        // Connect to database
+        final Connection sqlConnection = DriverManager.getConnection(jdbcUrl);
+        final PreparedStatement updateStatement = sqlConnection.prepareStatement(INSERT_UPDATE_PRODUCT_TABLE_SQL);
+        // Traverse product map
+        // Setup prepared statement
+        updateStatement.setString(1, product.alias);
+        updateStatement.setString(2, product.type);
+        updateStatement.setByte(3, product.unsafeData);
+        updateStatement.setFloat(4, product.getPrice());
+        updateStatement.setInt(5, product.supply);
+        updateStatement.setInt(6, product.demand);
+        // update
+        updateStatement.setString(7, product.type);
+        updateStatement.setByte(8, product.unsafeData);
+        updateStatement.setFloat(9, product.getPrice());
+        updateStatement.setInt(10, product.supply);
+        updateStatement.setInt(11, product.demand);
+        updateStatement.executeUpdate();
+        // Close objects
+        updateStatement.close();
         sqlConnection.close();
     }
 
@@ -396,7 +522,7 @@ public class SqlService {
      *                      argument is supplied to this method. If a database access error occurs or the url is null.
      */
     public static void readProductTable(@Nonnull final String jdbcUrl,
-                                        @Nonnull final Map<String, Product> productMap) throws SQLException {
+                                        @Nonnull final ConcurrentMap<String, Product> productMap) throws SQLException {
         // Connect to database
         final Connection sqlConnection = DriverManager.getConnection(jdbcUrl);
         // Read the whole table
@@ -443,5 +569,36 @@ public class SqlService {
         insertStatement.close();
         insertStatement.close();
         sqlConnection.close();
+    }
+
+    /**
+     * Attempt to insert a transaction into the table.
+     *
+     * @param jdbcUrl the url of the database.
+     * @param keyList the list of keys to search for.
+     * @throws SQLException if a database access error occurs; this method is called on a closed PreparedStatement or an
+     *                      argument is supplied to this method. If a database access error occurs or the url is null.
+     */
+    public static Map<String, String> searchConstants(@Nonnull final String jdbcUrl, @Nonnull final List<String> keyList) throws SQLException {
+        // Connect to database
+        final Connection sqlConnection = DriverManager.getConnection(jdbcUrl);
+        final StringBuilder builder = new StringBuilder(SEARCH_KEYS_IN_CONSTANTS);
+        builder.append('(');
+        keyList.forEach(key->builder.append('\'').append(key).append('\'').append(','));
+        builder.deleteCharAt(builder.length() - 1);
+        builder.append(");");
+        // Setup prepared statement
+        final PreparedStatement searchStatement = sqlConnection.prepareStatement(builder.toString());
+        // Execute query
+        final ResultSet resultSet = searchStatement.executeQuery();
+        final Map<String, String> returnMap = new HashMap<>();
+        while (resultSet.next()) {
+            returnMap.put(resultSet.getString("kkey"), resultSet.getString("value"));
+        }
+        // Close objects
+        resultSet.close();
+        searchStatement.close();
+        sqlConnection.close();
+        return returnMap;
     }
 }

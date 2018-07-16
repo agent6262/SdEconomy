@@ -1,0 +1,102 @@
+package net.reallifegames.sdeconomy.commands;
+
+import net.reallifegames.sdeconomy.SdEconomy;
+import org.bukkit.ChatColor;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
+
+import javax.annotation.Nonnull;
+import java.sql.*;
+import java.util.logging.Level;
+
+import static net.reallifegames.sdeconomy.SqlService.SEARCH_USERS_TRANSACTIONS;
+
+public class TransactionCommand extends BaseCommand {
+
+    /**
+     * Creates a new base command listener.
+     *
+     * @param pluginInstance the {@link SdEconomy} plugin instance.
+     */
+    public TransactionCommand(@Nonnull final SdEconomy pluginInstance) {
+        super(pluginInstance);
+    }
+
+    /**
+     * Executes the given command, returning its success.
+     *
+     * @param sender  source of the command.
+     * @param command command which was executed.
+     * @param label   alias of the command which was used.
+     * @param args    passed command arguments.
+     * @return true if a valid command, otherwise false.
+     */
+    @Override
+    public boolean onCommand(final CommandSender sender, final Command command, final String label, final String[] args) {
+        if (sender instanceof Player) {
+            final Player player = (Player) sender;
+            // Check for arg length
+            if (args.length != 2) {
+                sender.sendMessage(ChatColor.RED + "You need to specify the player name and page number.");
+                return false;
+            }
+            // Get amount of an item
+            final int pageNumber;
+            try {
+                pageNumber = Integer.parseInt(args[1]);
+            } catch (NumberFormatException | NullPointerException e) {
+                sender.sendMessage(ChatColor.RED + args[1] + " is not a number.");
+                return false;
+            }
+            // Connect to database
+            try {
+                final Connection sqlConnection = DriverManager.getConnection(pluginInstance.getConfig().getString("jdbcUrl"));
+                // Setup prepared statement
+                final PreparedStatement searchStatement = sqlConnection.prepareStatement(SEARCH_USERS_TRANSACTIONS);
+                searchStatement.setString(1, args[0]);
+                searchStatement.setInt(2, pageNumber);
+                // Execute query
+                final ResultSet resultSet = searchStatement.executeQuery();
+                boolean returns = false;
+                while (resultSet.next()) {
+                    returns = true;
+                    sender.sendMessage(getTextAction(resultSet.getInt("action")) + " " +
+                            resultSet.getString("alias") + " " + resultSet.getString("date")
+                            + " " + resultSet.getFloat("amount"));
+                }
+                // Close objects
+                resultSet.close();
+                searchStatement.close();
+                sqlConnection.close();
+                if (!returns) {
+                    sender.sendMessage("Player has not interacted with the economy yet.");
+                }
+                return true;
+            } catch (SQLException e) {
+                pluginInstance.getLogger().log(Level.SEVERE, "Unable to access database.", e);
+                sender.sendMessage(ChatColor.RED + "Error connecting to db.");
+                return true;
+            }
+        } else {
+            sender.sendMessage(ChatColor.RED + "You must be a player to run this command.");
+            return false;
+        }
+    }
+
+    /**
+     * @param action the action to get text for.
+     * @return the action or null if not found.
+     */
+    private static String getTextAction(final int action) {
+        switch (action) {
+            case 0:
+                return "SET PRICE";
+            case 1:
+                return "BUY";
+            case 2:
+                return "SELL";
+        }
+        return null;
+    }
+}

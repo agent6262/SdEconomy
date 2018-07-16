@@ -25,6 +25,7 @@ package net.reallifegames.sdeconomy;
 
 import javax.annotation.Nonnull;
 import java.sql.SQLException;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A simple data structure to represent an item in memory.
@@ -32,6 +33,12 @@ import java.sql.SQLException;
  * @author Tyler Bucher
  */
 public class Product {
+
+    /**
+     * The list of products.
+     */
+    @Nonnull
+    public static final ConcurrentHashMap<String, Product> stockPrices = new ConcurrentHashMap<>();
 
     /**
      * The type of this item.
@@ -156,8 +163,10 @@ public class Product {
     public static double checkBuyCost(@Nonnull final Product product, final int amount) {
         float cost = 0;
         int tDemand = product.demand;
+        int tSupply = product.supply;
         for (int i = 0; i < amount; i++) {
-            cost += product.price * ((float) tDemand / (float) product.supply);
+            cost += product.price * ((float) tDemand / tSupply);
+            tSupply -= tSupply == 1 ? 0 : 1;
             tDemand++;
         }
         return cost;
@@ -181,6 +190,7 @@ public class Product {
         float returnValue = 0;
         for (int i = 0; i < amount; i++) {
             returnValue += product.price * ((float) product.demand / (float) product.supply);
+            product.supply -= product.supply == 1 ? 0 : 1;
             product.demand++;
         }
         return returnValue;
@@ -200,5 +210,23 @@ public class Product {
                                 final float price) throws SQLException {
         SqlService.insertTransaction(jdbcUrl, uuid, SqlService.SET_ACTION, product.alias, price);
         product.price = price;
+    }
+
+    /**
+     * Decays the amount of the product demand.
+     *
+     * @param product the product to alter.
+     * @param amount  the amount to decay.
+     */
+    public static int decayDemand(@Nonnull Product product, final int amount) {
+        int decayAmount = 0;
+        for (; decayAmount < amount; decayAmount++) {
+            if (product.demand > 1) {
+                product.demand--;
+            } else {
+                break;
+            }
+        }
+        return decayAmount > 0 ? decayAmount : 0;
     }
 }

@@ -25,7 +25,7 @@ package net.reallifegames.sdeconomy.commands;
 
 import net.reallifegames.sdeconomy.Product;
 import net.reallifegames.sdeconomy.SdEconomy;
-import org.apache.commons.lang.ObjectUtils;
+import net.reallifegames.sdeconomy.SqlService;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -86,13 +86,14 @@ public class SetPriceCommand extends BaseCommand {
             }
             itemTypeInfo[0] = itemTypeInfo[0].toUpperCase();
             args[0] = args[0].toLowerCase();
+            final String jdbcUrl = pluginInstance.getConfig().getString("jdbcUrl");
             final Product product = pluginInstance.getStockPrices().computeIfAbsent(args[0],
                     k->new Product(args[0], itemTypeInfo[0]));
             product.type = itemTypeInfo[0];
             product.unsafeData = unsafeData;
             try {
-                Product.setPrice(product, pluginInstance.getConfig().getString("jdbcUrl"),
-                        player.getUniqueId().toString(), price);
+                SqlService.updateProduct(jdbcUrl, product);
+                Product.setPrice(product, jdbcUrl, player.getUniqueId().toString(), price);
             } catch (SQLException e) {
                 pluginInstance.getLogger().log(Level.SEVERE, "Unable to access database.", e);
                 sender.sendMessage(ChatColor.RED + "Error setting item price.");
