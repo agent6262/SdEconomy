@@ -9,7 +9,7 @@ sourceCompatibility = 1.8
 
 group 'net.reallifegames'
 project.ext.baseName = 'sdeconomy'
-version '1.0.0'
+version '2.0.0'
 description = 'Minecraft Supply And Demand Economy'
 archivesBaseName = 'sdeconomy'
 
