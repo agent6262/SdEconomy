@@ -82,7 +82,7 @@ public class TransactionCommand extends BaseCommand {
             // Setup prepared statement
             final PreparedStatement searchStatement = sqlConnection.prepareStatement(SEARCH_USERS_TRANSACTIONS);
             searchStatement.setString(1, args[0]);
-            searchStatement.setInt(2, pageNumber - 1);
+            searchStatement.setInt(2, pageNumber);
             // Execute query
             final ResultSet resultSet = searchStatement.executeQuery();
             boolean returns = false;
