@@ -165,9 +165,9 @@ public class Product {
         int tDemand = product.demand;
         int tSupply = product.supply;
         for (int i = 0; i < amount; i++) {
-            cost += product.price * ((float) tDemand / tSupply);
             tSupply -= tSupply == 1 ? 0 : 1;
             tDemand++;
+            cost += product.price * ((float) tDemand / tSupply);
         }
         return cost;
     }
@@ -189,9 +189,9 @@ public class Product {
         SqlService.insertTransaction(jdbcUrl, uuid, SqlService.BUY_ACTION, product.alias, amount);
         float returnValue = 0;
         for (int i = 0; i < amount; i++) {
-            returnValue += product.price * ((float) product.demand / (float) product.supply);
             product.supply -= product.supply == 1 ? 0 : 1;
             product.demand++;
+            returnValue += product.price * ((float) product.demand / (float) product.supply);
         }
         return returnValue;
     }
