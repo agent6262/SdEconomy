@@ -88,7 +88,7 @@ public class SellCommand extends BaseCommand {
             }
             pluginInstance.getEconomyService().depositPlayer(player, returns);
             // Send player message
-            sender.sendMessage(ChatColor.GREEN + "You received " + returns + " "
+            sender.sendMessage(ChatColor.GREEN + "You received " + pluginInstance.decimalFormat.format(returns) + " "
                     + pluginInstance.getEconomyService().currencyNamePlural() + ".");
             player.getInventory().getItemInMainHand().setAmount(0);
             return true;

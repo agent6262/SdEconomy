@@ -75,7 +75,7 @@ public class CheckBuyCommand extends BaseCommand {
                 sender.sendMessage(ChatColor.GOLD + "The price of `" + args[0] + "` has not been set yet.");
                 return true;
             }
-            sender.sendMessage(ChatColor.GOLD + "It will cost " + Product.checkBuyCost(product, amount) + " "
+            sender.sendMessage(ChatColor.GOLD + "It will cost " + pluginInstance.decimalFormat.format(Product.checkBuyCost(product, amount)) + " "
                     + pluginInstance.getEconomyService().currencyNamePlural() + " to buy '" + args[0] + "'");
             return true;
         }

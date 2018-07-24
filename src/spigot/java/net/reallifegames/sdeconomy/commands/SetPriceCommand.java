@@ -99,7 +99,8 @@ public class SetPriceCommand extends BaseCommand {
                 sender.sendMessage(ChatColor.RED + "Error setting item price.");
                 return true;
             }
-            sender.sendMessage(ChatColor.GREEN + "The price of `" + args[0] + "` has been set to " + product.getPrice());
+            sender.sendMessage(ChatColor.GREEN + "The price of `" + args[0] + "` has been set to " +
+                    pluginInstance.decimalFormat.format(product.getPrice()));
             return true;
         } else {
             sender.sendMessage(ChatColor.RED + "You must be a player to run this command.");

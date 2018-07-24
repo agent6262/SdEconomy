@@ -25,7 +25,9 @@ package net.reallifegames.sdeconomy.commands;
 
 import net.reallifegames.sdeconomy.Product;
 import net.reallifegames.sdeconomy.SdEconomy;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 
@@ -65,7 +67,7 @@ public class TransactionCommand extends BaseCommand {
     public boolean onCommand(final CommandSender sender, final Command command, final String label, final String[] args) {
         // Check for arg length
         if (args.length < 1) {
-            sender.sendMessage(ChatColor.RED + "You need to specify the player uuid or and the page number.");
+            sender.sendMessage(ChatColor.RED + "You need to specify the player name or and the page number.");
             return false;
         }
         // Get amount of an item
@@ -77,12 +79,24 @@ public class TransactionCommand extends BaseCommand {
             sender.sendMessage(ChatColor.RED + args[1] + " is not a number.");
             return false;
         }
+        // Get player uuid
+        String uuid = null;
+        for (OfflinePlayer offlinePlayer : Bukkit.getOfflinePlayers()) {
+            if (offlinePlayer.getName().equalsIgnoreCase(args[0])) {
+                uuid = offlinePlayer.getUniqueId().toString();
+            }
+        }
+        // Return if uuid is null
+        if (uuid == null) {
+            sender.sendMessage("Player has no rows for this page number or has not interacted with the economy yet.");
+            return true;
+        }
         // Connect to database
         try {
             final Connection sqlConnection = DriverManager.getConnection(pluginInstance.getConfig().getString("jdbcUrl"));
             // Setup prepared statement
             final PreparedStatement searchStatement = sqlConnection.prepareStatement(SEARCH_USERS_TRANSACTIONS);
-            searchStatement.setString(1, args[0]);
+            searchStatement.setString(1, uuid);
             searchStatement.setInt(2, pageNumber);
             // Execute query
             final ResultSet resultSet = searchStatement.executeQuery();

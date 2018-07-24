@@ -34,10 +34,12 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.math.RoundingMode;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.text.DecimalFormat;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 
@@ -54,10 +56,18 @@ public class SdEconomy extends JavaPlugin {
     private Economy economyService;
 
     /**
+     * The decimal formatter for printing money.
+     */
+    public DecimalFormat decimalFormat;
+
+    /**
      * Called when this plugin is enabled.
      */
     @Override
     public void onEnable() {
+        // Setup the decimal formatter
+        decimalFormat = new DecimalFormat(".####");
+        decimalFormat.setRoundingMode(RoundingMode.DOWN);
         // Get the config
         final FileConfiguration config = this.getConfig();
         // Check to see if the jdbc url is present
@@ -106,10 +116,13 @@ public class SdEconomy extends JavaPlugin {
         try {
             SqlService.updateToSqlV2(jdbcUrl);
             SqlService.createProductTable(jdbcUrl);
+            SqlService.createUuidTable(jdbcUrl);
             SqlService.createTransactionTable(jdbcUrl);
             SqlService.updateToSqlV3(jdbcUrl);
             SqlService.createConstantsTable(jdbcUrl);
+            SqlService.setSqlVersion(jdbcUrl);
             SqlService.updateToSqlV4(jdbcUrl);
+            SqlService.updateToSqlV5(jdbcUrl);
             SqlService.readProductTable(jdbcUrl, Product.stockPrices);
         } catch (SQLException e) {
             getLogger().log(Level.SEVERE, "Error accessing database. Plugin not loaded", e);
@@ -157,6 +170,7 @@ public class SdEconomy extends JavaPlugin {
                         insertStatement.setByte(2, SqlService.DECAY_ACTION);
                         insertStatement.setString(3, product.alias);
                         insertStatement.setFloat(4, amount);
+                        insertStatement.setDouble(5, 0);
                         // Execute query
                         insertStatement.addBatch();
                     }

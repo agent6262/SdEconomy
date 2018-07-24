@@ -68,7 +68,8 @@ public class GetPriceCommand extends BaseCommand {
         if (product == null) {
             sender.sendMessage(ChatColor.GOLD + "The price of `" + args[0] + "` has not been set yet.");
         } else {
-            sender.sendMessage(ChatColor.GOLD + "The price of `" + args[0] + "` is: " + product.getPrice());
+            sender.sendMessage(ChatColor.GOLD + "The price of `" + args[0] + "` is: " +
+                    pluginInstance.decimalFormat.format(product.getPrice()));
         }
         return true;
     }

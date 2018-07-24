@@ -106,7 +106,7 @@ public class BuyCommand extends BaseCommand {
                 }
                 pluginInstance.getEconomyService().withdrawPlayer(player, cost);
                 // Send player message
-                sender.sendMessage(ChatColor.GREEN + "You received " + amount + " " + args[0] + ".");
+                sender.sendMessage(ChatColor.GREEN + "You received " + pluginInstance.decimalFormat.format(amount) + " " + args[0] + ".");
                 final Map<Integer, ItemStack> leftOverItems = player.getInventory()
                         .addItem(new ItemStack(material, amount, (short) 0, product.unsafeData));
                 leftOverItems.forEach((k, v)->player.getWorld().dropItem(player.getLocation(), v));

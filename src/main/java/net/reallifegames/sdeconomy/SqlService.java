@@ -40,7 +40,7 @@ public class SqlService {
     /**
      * The current sql version of this plugin.
      */
-    public static final int SQL_VERSION = 4;
+    public static final int SQL_VERSION = 5;
 
     /**
      * Checks to see if a table exists.
@@ -97,22 +97,31 @@ public class SqlService {
     @Nonnull
     private static final String TRANSACTION_TABLE_SQL = "CREATE TABLE IF NOT EXISTS `sd_transaction` (`uuid` char(36) " +
             "NOT NULL,`action` tinyint(4) NOT NULL,`price_id` int(11) NOT NULL,`date` timestamp NOT NULL DEFAULT " +
-            "CURRENT_TIMESTAMP,`amount` float NOT NULL, KEY `uuid` (`uuid`), KEY `action` (`action`), KEY `price_id` " +
-            "(`price_id`), KEY `date` (`date`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
+            "CURRENT_TIMESTAMP,`amount` float NOT NULL, `money_exchanged` double NOT NULL DEFAULT '0', KEY `uuid` " +
+            "(`uuid`), KEY `action` (`action`), KEY `price_id` (`price_id`), KEY `date` (`date`)) ENGINE=InnoDB DEFAULT " +
+            "CHARSET=latin1;";
 
     /**
      * The economy transaction table fk sql.
      */
     @Nonnull
-    private static final String TRANSACTION_TABLE_FK_SQL = "ALTER TABLE `sd_transaction` ADD CONSTRAINT `fk_price_id` " +
+    private static final String TRANSACTION_TABLE_FK_PRICE_SQL = "ALTER TABLE `sd_transaction` ADD CONSTRAINT `fk_price_id` " +
             "FOREIGN KEY (`price_id`) REFERENCES `sd_prices` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;";
+
+    /**
+     * The economy transaction table fk sql.
+     */
+    @Nonnull
+    private static final String TRANSACTION_TABLE_FK_UUID_SQL = "ALTER TABLE `sd_transaction` ADD CONSTRAINT `fk_uuid_id` " +
+            "FOREIGN KEY (`uuid_id`) REFERENCES `sd_uuid`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;";
 
     /**
      * The transaction table insert sql query string.
      */
     @Nonnull
-    public static final String INSERT_TRANSACTION_TABLE_SQL = "INSERT INTO `sd_transaction`(`uuid`, `action`, " +
-            "`price_id`, `amount`) VALUES (?,?,(SELECT `id` FROM `sd_prices` WHERE LOWER(`alias`)=?),?);";
+    public static final String INSERT_TRANSACTION_TABLE_SQL = "INSERT INTO `sd_transaction`(`uuid_id`, `action`, " +
+            "`price_id`, `amount`, `money_exchanged`) VALUES ((SELECT `id` FROM `sd_uuid` WHERE `uuid`=?),?," +
+            "(SELECT `id` FROM `sd_prices` WHERE LOWER(`alias`)=?),?,?);";
 
     /**
      * The set price action for the transaction table.
@@ -178,7 +187,12 @@ public class SqlService {
     @Nonnull
     public static final String SEARCH_USERS_TRANSACTIONS = "SELECT `sd_transaction`.`action`, `sd_prices`.`alias`, " +
             "`sd_transaction`.`date`, `sd_transaction`.`amount` FROM `sd_transaction` INNER JOIN `sd_prices` ON " +
-            "`sd_prices`.`id`=`sd_transaction`.`price_id` WHERE `sd_transaction`.`uuid`=? ORDER BY `sd_transaction`.`date` DESC LIMIT ?,20;";
+            "`sd_prices`.`id`=`sd_transaction`.`price_id` INNER JOIN `sd_uuid` ON `sd_uuid`.`id`=`sd_transaction`." +
+            "`uuid_id` WHERE `sd_uuid`.`uuid`=? ORDER BY `sd_transaction`.`date` DESC LIMIT ?,20;";
+
+    @Nonnull
+    private static final String UUID_TABLE_SQL = "CREATE TABLE IF NOT EXISTS `sd_uuid` ( `id` INT NOT NULL AUTO_INCREMENT " +
+            ", `uuid` CHAR(36) NOT NULL , PRIMARY KEY (`id`), UNIQUE KEY `uuid` (`uuid`)) ENGINE = InnoDB;";
 
     /**
      * Checks to see if all of the tables passed exist in the database.
@@ -296,9 +310,43 @@ public class SqlService {
             // sd_transaction table
             sqlConnection.prepareStatement("ALTER TABLE `sd_transaction` ADD INDEX(`date`);").execute();
             // Update sql version
-            final PreparedStatement updateStatement = sqlConnection.prepareStatement(INSERT_UPDATE_SQL_VERSION);
-            updateStatement.setString(1, SQL_VERSION_CONSTANT);
-            updateStatement.setString(2, String.valueOf(SQL_VERSION));
+            final PreparedStatement updateStatement = sqlConnection.prepareStatement("UPDATE `sd_constants` SET `value`=? WHERE `kkey`=?;");
+            updateStatement.setString(1, String.valueOf(4));
+            updateStatement.setString(2, SQL_VERSION_CONSTANT);
+            updateStatement.executeUpdate();
+            updateStatement.close();
+            // Close objects
+            sqlConnection.close();
+        }
+    }
+
+    /**
+     * Updates the database from version 4 to version 5.
+     *
+     * @param jdbcUrl the url of the database.
+     * @throws SQLException if a database access error occurs; this method is called on a closed PreparedStatement or an
+     *                      argument is supplied to this method. If a database access error occurs or the url is null.
+     */
+    public static void updateToSqlV5(@Nonnull final String jdbcUrl) throws SQLException {
+        final int sqlVersion = getSqlVersion(jdbcUrl);
+        if (sqlVersion == 4) {
+            final Connection sqlConnection = DriverManager.getConnection(jdbcUrl);
+            // sd_transaction table
+            sqlConnection.prepareStatement("ALTER TABLE `sd_transaction` ADD `money_exchanged` DOUBLE NOT NULL DEFAULT '0' AFTER `amount`;").execute();
+            // sd_uuid
+            sqlConnection.prepareStatement(UUID_TABLE_SQL).execute();
+            // sd_transaction table
+            sqlConnection.prepareStatement("INSERT INTO `sd_uuid`(`uuid`) SELECT DISTINCT `uuid` FROM `sd_transaction`;").execute();
+            sqlConnection.prepareStatement("ALTER TABLE `sd_transaction` ADD `uuid_id` INT NOT NULL FIRST;").execute();
+            sqlConnection.prepareStatement("ALTER TABLE `sd_transaction` ADD INDEX(`uuid_id`);").execute();
+            sqlConnection.prepareStatement("UPDATE `sd_transaction` INNER JOIN `sd_uuid` ON `sd_uuid`.`uuid`=" +
+                    "`sd_transaction`.`uuid` SET `uuid_id`=`sd_uuid`.`id`;").execute();
+            sqlConnection.prepareStatement("ALTER TABLE `sd_transaction` DROP `uuid`;").execute();
+            sqlConnection.prepareStatement(TRANSACTION_TABLE_FK_UUID_SQL).execute();
+            // Update sql version
+            final PreparedStatement updateStatement = sqlConnection.prepareStatement("UPDATE `sd_constants` SET `value`=? WHERE `kkey`=?;");
+            updateStatement.setString(1, String.valueOf(5));
+            updateStatement.setString(2, SQL_VERSION_CONSTANT);
             updateStatement.executeUpdate();
             updateStatement.close();
             // Close objects
@@ -378,10 +426,14 @@ public class SqlService {
     public static void createTransactionTable(@Nonnull final String jdbcUrl) throws SQLException {
         // Connect to table
         final Connection sqlConnection = DriverManager.getConnection(jdbcUrl);
+        final int sqlVersion = getSqlVersion(jdbcUrl);
         // Create table if it does not exist
         sqlConnection.prepareStatement(TRANSACTION_TABLE_SQL).execute();
         if (!foreignKeysExits(jdbcUrl, "fk_price_id")) {
-            sqlConnection.prepareStatement(TRANSACTION_TABLE_FK_SQL).execute();
+            sqlConnection.prepareStatement(TRANSACTION_TABLE_FK_PRICE_SQL).execute();
+        }
+        if ((sqlVersion == -1 || sqlVersion == 5) && !foreignKeysExits(jdbcUrl, "fk_uuid_id")) {
+            sqlConnection.prepareStatement(TRANSACTION_TABLE_FK_UUID_SQL).execute();
         }
         // Close objects
         sqlConnection.close();
@@ -399,6 +451,24 @@ public class SqlService {
         final Connection sqlConnection = DriverManager.getConnection(jdbcUrl);
         // Create table if it does not exist
         sqlConnection.prepareStatement(CONSTANTS_TABLE_SQL).execute();
+        // Close objects
+        sqlConnection.close();
+    }
+
+    /**
+     * Attempts to create the uuid table.
+     *
+     * @param jdbcUrl the url of the database.
+     * @throws SQLException if a database access error occurs; this method is called on a closed PreparedStatement or an
+     *                      argument is supplied to this method. If a database access error occurs or the url is null.
+     */
+    public static void createUuidTable(@Nonnull final String jdbcUrl) throws SQLException {
+        // Connect to table
+        final Connection sqlConnection = DriverManager.getConnection(jdbcUrl);
+        // Create table if it does not exist
+        sqlConnection.prepareStatement(UUID_TABLE_SQL).execute();
+        sqlConnection.prepareStatement("INSERT INTO `sd_uuid`(`uuid`) VALUES " +
+                "('" + SYSTEM_UUID + "') ON DUPLICATE KEY UPDATE `id` = `id`;").execute();
         // Close objects
         sqlConnection.close();
     }
@@ -554,15 +624,29 @@ public class SqlService {
      *                      argument is supplied to this method. If a database access error occurs or the url is null.
      */
     public static void insertTransaction(@Nonnull final String jdbcUrl, @Nonnull final String uuid, final byte action,
-                                         @Nonnull final String alias, final float amount) throws SQLException {
+                                         @Nonnull final String alias, final float amount, final double moneyExchanged) throws SQLException {
         // Connect to database
         final Connection sqlConnection = DriverManager.getConnection(jdbcUrl);
+        // Check to see if user exists
+        final PreparedStatement searchUser = sqlConnection.prepareStatement("SELECT EXISTS(SELECT `id` FROM `sd_uuid` WHERE `uuid`=?);");
+        searchUser.setString(1, uuid);
+        final ResultSet resultSet = searchUser.executeQuery();
+        // Did the sql query get any values if sao skip this
+        if (!resultSet.next() || !resultSet.getBoolean(1)) {
+            final PreparedStatement insertUuidStatement = sqlConnection.prepareStatement("INSERT INTO `sd_uuid`(`uuid`) VALUES (?);");
+            insertUuidStatement.setString(1, uuid);
+            insertUuidStatement.executeUpdate();
+            insertUuidStatement.close();
+        }
+        resultSet.close();
+        searchUser.close();
         // Setup prepared statement
         final PreparedStatement insertStatement = sqlConnection.prepareStatement(INSERT_TRANSACTION_TABLE_SQL);
         insertStatement.setString(1, uuid);
         insertStatement.setByte(2, action);
         insertStatement.setString(3, alias);
         insertStatement.setFloat(4, amount);
+        insertStatement.setDouble(5, moneyExchanged);
         // Execute query
         insertStatement.executeUpdate();
         // Close objects

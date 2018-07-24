@@ -75,8 +75,9 @@ public class CheckSellCommand extends BaseCommand {
                     sender.sendMessage(ChatColor.GOLD + "The price of `" + itemInHand.getType().name() + "` has not been set yet.");
                     return true;
                 }
-                sender.sendMessage(ChatColor.GOLD + "You will receive " + Product.checkSellReturns(product, itemInHand.getAmount()) + " "
-                        + pluginInstance.getEconomyService().currencyNamePlural() + ".");
+                sender.sendMessage(ChatColor.GOLD + "You will receive " + pluginInstance.decimalFormat.format(
+                        Product.checkSellReturns(product, itemInHand.getAmount())) + " " +
+                        pluginInstance.getEconomyService().currencyNamePlural() + ".");
                 return true;
             } else {
                 sender.sendMessage(ChatColor.RED + "You must be a player to run this command with out any arguments.");
@@ -94,13 +95,13 @@ public class CheckSellCommand extends BaseCommand {
                 sender.sendMessage(ChatColor.RED + args[1] + " is not a number.");
                 return false;
             }
-            final Product product = pluginInstance.getStockPrices().get(args[0]);//todo
+            final Product product = pluginInstance.getStockPrices().get(args[0]);
             if (product == null) {
                 sender.sendMessage(ChatColor.GOLD + "The price of `" + args[0] + "` has not been set yet.");
                 return true;
             }
-            sender.sendMessage(ChatColor.GOLD + "You will receive " + Product.checkSellReturns(product, amount) + " "
-                    + pluginInstance.getEconomyService().currencyNamePlural() + ".");
+            sender.sendMessage(ChatColor.GOLD + "You will receive " + pluginInstance.decimalFormat.format(
+                    Product.checkSellReturns(product, amount)) + " " + pluginInstance.getEconomyService().currencyNamePlural() + ".");
             return true;
         }
     }

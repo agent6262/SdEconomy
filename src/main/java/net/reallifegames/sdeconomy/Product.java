@@ -121,11 +121,11 @@ public class Product {
      * @return the amount of money you would receive.
      */
     public static double checkSellReturns(@Nonnull final Product product, final int amount) {
-        float returnValue = 0;
+        double returnValue = 0;
         int tSupply = product.supply;
         for (int i = 0; i < amount; i++) {
             tSupply++;
-            returnValue += product.price * ((float) product.demand / (float) tSupply);
+            returnValue += product.price * ((double) product.demand / (double) tSupply);
         }
         return returnValue;
     }
@@ -144,12 +144,12 @@ public class Product {
      */
     public static double sell(@Nonnull Product product, @Nonnull final String jdbcUrl, @Nonnull final String uuid,
                               final int amount) throws SQLException {
-        SqlService.insertTransaction(jdbcUrl, uuid, SqlService.SELL_ACTION, product.alias, amount);
-        float returnValue = 0;
+        double returnValue = 0;
         for (int i = 0; i < amount; i++) {
             product.supply++;
-            returnValue += product.price * ((float) product.demand / (float) product.supply);
+            returnValue += product.price * ((double) product.demand / (double) product.supply);
         }
+        SqlService.insertTransaction(jdbcUrl, uuid, SqlService.SELL_ACTION, product.alias, amount, returnValue);
         return returnValue;
     }
 
@@ -161,13 +161,13 @@ public class Product {
      * @return the amount of money it would cost to buy some amount of items.
      */
     public static double checkBuyCost(@Nonnull final Product product, final int amount) {
-        float cost = 0;
+        double cost = 0;
         int tDemand = product.demand;
         int tSupply = product.supply;
         for (int i = 0; i < amount; i++) {
             tSupply -= tSupply == 1 ? 0 : 1;
             tDemand++;
-            cost += product.price * ((float) tDemand / tSupply);
+            cost += product.price * ((double) tDemand / (double) tSupply);
         }
         return cost;
     }
@@ -186,13 +186,13 @@ public class Product {
      */
     public static double buy(@Nonnull Product product, @Nonnull final String jdbcUrl, @Nonnull final String uuid,
                              final int amount) throws SQLException {
-        SqlService.insertTransaction(jdbcUrl, uuid, SqlService.BUY_ACTION, product.alias, amount);
-        float returnValue = 0;
+        double returnValue = 0;
         for (int i = 0; i < amount; i++) {
             product.supply -= product.supply == 1 ? 0 : 1;
             product.demand++;
-            returnValue += product.price * ((float) product.demand / (float) product.supply);
+            returnValue += product.price * ((double) product.demand / (double) product.supply);
         }
+        SqlService.insertTransaction(jdbcUrl, uuid, SqlService.BUY_ACTION, product.alias, amount, returnValue);
         return returnValue;
     }
 
@@ -208,8 +208,8 @@ public class Product {
      */
     public static void setPrice(@Nonnull Product product, @Nonnull final String jdbcUrl, @Nonnull final String uuid,
                                 final float price) throws SQLException {
-        SqlService.insertTransaction(jdbcUrl, uuid, SqlService.SET_ACTION, product.alias, price);
         product.price = price;
+        SqlService.insertTransaction(jdbcUrl, uuid, SqlService.SET_ACTION, product.alias, price, 0);
     }
 
     /**
