@@ -336,7 +336,8 @@ public class SqlService {
             // sd_uuid
             sqlConnection.prepareStatement(UUID_TABLE_SQL).execute();
             // sd_transaction table
-            sqlConnection.prepareStatement("INSERT INTO `sd_uuid`(`uuid`) SELECT DISTINCT `uuid` FROM `sd_transaction`;").execute();
+            sqlConnection.prepareStatement("INSERT INTO `sd_uuid`(`uuid`) SELECT DISTINCT `uuid` FROM " +
+                    "`sd_transaction` ON DUPLICATE KEY UPDATE `id`=`id`;").execute();
             sqlConnection.prepareStatement("ALTER TABLE `sd_transaction` ADD `uuid_id` INT NOT NULL FIRST;").execute();
             sqlConnection.prepareStatement("ALTER TABLE `sd_transaction` ADD INDEX(`uuid_id`);").execute();
             sqlConnection.prepareStatement("UPDATE `sd_transaction` INNER JOIN `sd_uuid` ON `sd_uuid`.`uuid`=" +
