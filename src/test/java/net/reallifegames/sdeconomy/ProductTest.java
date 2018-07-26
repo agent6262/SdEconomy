@@ -28,19 +28,28 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * Tests to see if a given
+ * Tests to see if a given product can print money.
  *
  * @author Tyler Bucher
  */
 public class ProductTest {
 
+    /**
+     * The product to test.
+     */
     private Product testProduct;
 
+    /**
+     * Initial setup for the test product.
+     */
     @Before
     public void setUp() {
         testProduct = new Product("test", "test");
     }
 
+    /**
+     * Tests all possible values.
+     */
     @Test
     public void testProductMoneyExchange() {
         // Price loop
@@ -51,14 +60,12 @@ public class ProductTest {
                 for (int k = 1; k <= 100; k++) {
                     // Buy/Sell amount
                     for (int l = 1; l <= 100; l++) {
-                        Product.setPriceNoSql(testProduct, i);//(float) i / 5.0f
+                        Product.setPriceNoSql(testProduct, (float) i / 5.0f);
                         testProduct.demand = j;
                         testProduct.supply = k;
-                        //System.out.println(testProduct.getPrice()+ " "+testProduct.demand+" "+testProduct.supply+" "+l);
                         double cost = Product.buyNoSql(testProduct, l);
                         double returns = Product.sellNoSql(testProduct, l);
-                        Assert.assertTrue("A product can print money and cause inflation."+" "+testProduct.getPrice()+
-                                " "+testProduct.demand+" "+testProduct.supply+" "+l+" "+cost+" "+returns, returns <= cost);
+                        Assert.assertTrue("A product can print money and cause inflation.", returns <= cost);
                     }
                 }
             }
