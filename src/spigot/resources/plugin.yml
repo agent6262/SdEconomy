@@ -23,7 +23,7 @@
 #
 
 name: SdEconomy
-version: 2.1.0
+version: 2.1.1
 main: net.reallifegames.sdeconomy.SdEconomy
 author: agent6262
 depend: [Vault]

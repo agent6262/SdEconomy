@@ -64,6 +64,8 @@ public class BuyCommand extends BaseCommand {
      */
     @Override
     public boolean onCommand(final CommandSender sender, final Command command, final String label, final String[] args) {
+        // todo add config to check if player can hold all in inventory
+        // todo add config option for max amount of items in one go
         if (sender instanceof Player) {
             final Player player = (Player) sender;
             // Check for arg length

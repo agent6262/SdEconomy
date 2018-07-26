@@ -144,12 +144,25 @@ public class Product {
      */
     public static double sell(@Nonnull Product product, @Nonnull final String jdbcUrl, @Nonnull final String uuid,
                               final int amount) throws SQLException {
+        double returnValue = sellNoSql(product, amount);
+        SqlService.insertTransaction(jdbcUrl, uuid, SqlService.SELL_ACTION, product.alias, amount, returnValue);
+        return returnValue;
+    }
+
+    /**
+     * Sell an amount of an item to the server without sql.
+     *
+     * @param product the product to sell.
+     * @param amount  the amount sold.
+     * @return the amount of money to give to the player.
+     */
+    public static double sellNoSql(@Nonnull Product product, final int amount) {
         double returnValue = 0;
         for (int i = 0; i < amount; i++) {
             product.supply++;
+            product.demand -= product.demand == 1 ? 0 : 1;
             returnValue += product.price * ((double) product.demand / (double) product.supply);
         }
-        SqlService.insertTransaction(jdbcUrl, uuid, SqlService.SELL_ACTION, product.alias, amount, returnValue);
         return returnValue;
     }
 
@@ -186,13 +199,25 @@ public class Product {
      */
     public static double buy(@Nonnull Product product, @Nonnull final String jdbcUrl, @Nonnull final String uuid,
                              final int amount) throws SQLException {
+        double returnValue = buyNoSql(product, amount);
+        SqlService.insertTransaction(jdbcUrl, uuid, SqlService.BUY_ACTION, product.alias, amount, returnValue);
+        return returnValue;
+    }
+
+    /**
+     * Sell an amount of an item to the server without sql logging.
+     *
+     * @param product the product to sell.
+     * @param amount  the amount sold.
+     * @return the amount of money to take from the player.
+     */
+    public static double buyNoSql(@Nonnull Product product, final int amount) {
         double returnValue = 0;
         for (int i = 0; i < amount; i++) {
-            product.supply -= product.supply == 1 ? 0 : 1;
             product.demand++;
+            product.supply -= product.supply == 1 ? 0 : 1;
             returnValue += product.price * ((double) product.demand / (double) product.supply);
         }
-        SqlService.insertTransaction(jdbcUrl, uuid, SqlService.BUY_ACTION, product.alias, amount, returnValue);
         return returnValue;
     }
 
@@ -208,8 +233,18 @@ public class Product {
      */
     public static void setPrice(@Nonnull Product product, @Nonnull final String jdbcUrl, @Nonnull final String uuid,
                                 final float price) throws SQLException {
-        product.price = price;
+        setPriceNoSql(product, price);
         SqlService.insertTransaction(jdbcUrl, uuid, SqlService.SET_ACTION, product.alias, price, 0);
+    }
+
+    /**
+     * Sets the price of a product without sql.
+     *
+     * @param product the product to alter.
+     * @param price   the price to be set.
+     */
+    public static float setPriceNoSql(@Nonnull Product product, final float price) {
+        return product.price = price;
     }
 
     /**

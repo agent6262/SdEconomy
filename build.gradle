@@ -9,7 +9,7 @@ sourceCompatibility = 1.8
 
 group 'net.reallifegames'
 project.ext.baseName = 'sdeconomy'
-version '2.1.0'
+version '2.1.1'
 description = 'Minecraft Supply And Demand Economy'
 archivesBaseName = 'sdeconomy'
 
@@ -45,6 +45,8 @@ sourceSets {
 }
 
 dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+
     compile 'com.google.code.findbugs:jsr305:3.0.1'
 
     spongeCompile 'com.google.code.findbugs:jsr305:3.0.1'
@@ -58,6 +60,7 @@ dependencies {
 }
 
 task buildSpigot(type: Jar) {
+    dependsOn build
     baseName = archivesBaseName + "-spigot"
     version = version
     from {
