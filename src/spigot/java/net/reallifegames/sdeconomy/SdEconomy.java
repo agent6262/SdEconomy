@@ -61,6 +61,11 @@ public class SdEconomy extends JavaPlugin {
     public DecimalFormat decimalFormat;
 
     /**
+     * The configuration for this plugin.
+     */
+    private Configuration configuration;
+
+    /**
      * Called when this plugin is enabled.
      */
     @Override
@@ -69,25 +74,7 @@ public class SdEconomy extends JavaPlugin {
         decimalFormat = new DecimalFormat(".####");
         decimalFormat.setRoundingMode(RoundingMode.DOWN);
         // Get the config
-        final FileConfiguration config = this.getConfig();
-        // Check to see if the jdbc url is present
-        final String jdbcUrl = config.getString("jdbcUrl");
-        // Check to see if the populateDatabase option is present
-        final boolean populateDatabase = config.getBoolean("populateDatabase");
-        // The save interval for the prices.
-        final long interval = config.getLong("saveInterval");
-        // The decay interval
-        final long demandDecayInterval = config.getLong("saveInterval");
-        // The decay amount
-        final int demandDecayAmount = config.getInt("demandDecayAmount");
-        // Config defaults
-        config.addDefault("jdbcUrl", "jdbc:mysql://<host>:<port>/<db>?user=<user>&password=<password>&useSSL=false");
-        config.addDefault("populateDatabase", false);
-        config.addDefault("saveInterval", 6000);
-        config.addDefault("demandDecayInterval", 24000);
-        config.addDefault("demandDecayAmount", 64);
-        config.options().copyDefaults(true);
-        saveConfig();
+        configuration = new Configuration(this);
         // Get vault plugin
         if (this.getServer().getPluginManager().getPlugin("Vault") == null) {
             this.getLogger().log(Level.SEVERE, "Vault plugin not found. Plugin not loaded");
@@ -106,64 +93,48 @@ public class SdEconomy extends JavaPlugin {
             return;
         }
         // Load material names
-        if (populateDatabase) {
+        if (configuration.isPopulateDatabase()) {
             for (final Material material : Material.values()) {
                 if (material.isItem()) {
                     Product.stockPrices.computeIfAbsent(material.name(), k->new Product(material.name().toLowerCase(), material.name()));
                 }
             }
         }
+        // Setup sql data
         try {
-            SqlService.updateToSqlV2(jdbcUrl);
-            SqlService.createProductTable(jdbcUrl);
-            SqlService.createUuidTable(jdbcUrl);
-            SqlService.createTransactionTable(jdbcUrl);
-            SqlService.updateToSqlV3(jdbcUrl);
-            SqlService.createConstantsTable(jdbcUrl);
-            SqlService.setSqlVersion(jdbcUrl);
-            SqlService.updateToSqlV4(jdbcUrl);
-            SqlService.updateToSqlV5(jdbcUrl);
-            SqlService.readProductTable(jdbcUrl, Product.stockPrices);
+            SqlService.createConstantsTable(configuration.getJdbcUrl());
+            SqlService.createProductTable(configuration.getJdbcUrl());
+            SqlService.createUuidTable(configuration.getJdbcUrl());
+            SqlService.createTransactionTable(configuration.getJdbcUrl());
+            SqlService.setSqlVersion(configuration.getJdbcUrl());
+            SqlService.updateToSqlV4(configuration.getJdbcUrl());
+            SqlService.updateToSqlV5(configuration.getJdbcUrl());
+            SqlService.readProductTable(configuration.getJdbcUrl(), Product.stockPrices);
         } catch (SQLException e) {
             getLogger().log(Level.SEVERE, "Error accessing database. Plugin not loaded", e);
             return;
         }
         // Register commands
-        // Set price command
-        this.getCommand("setprice").setExecutor(new SetPriceCommand(this));
-        // Remove price command
-        this.getCommand("removeprice").setExecutor(new RemovePriceCommand(this));
-        // Get price command
-        this.getCommand("getprice").setExecutor(new GetPriceCommand(this));
-        // Check sell command
-        this.getCommand("checksell").setExecutor(new CheckSellCommand(this));
-        // Check buy command
-        this.getCommand("checkbuy").setExecutor(new CheckBuyCommand(this));
-        // Sell command
-        this.getCommand("sell").setExecutor(new SellCommand(this));
-        // Buy command
-        this.getCommand("buy").setExecutor(new BuyCommand(this));
-        // Transaction command
-        this.getCommand("transactions").setExecutor(new TransactionCommand(this));
+        registerCommands();
         // Create repeating save task
         Bukkit.getScheduler().scheduleSyncRepeatingTask(this, ()->{
             // Attempt to save item data
             try {
-                SqlService.updateProductTable(jdbcUrl, Product.stockPrices);
+                SqlService.updateProductTable(configuration.getJdbcUrl(), Product.stockPrices);
             } catch (SQLException e) {
                 getLogger().log(Level.SEVERE, "Error accessing database", e);
             }
-        }, 0, interval);
+        }, 0, configuration.getSaveInterval());
         // Create repeating decay task
         Bukkit.getScheduler().scheduleSyncRepeatingTask(this, ()->{
             try {
                 // Connect to database
-                final Connection sqlConnection = DriverManager.getConnection(jdbcUrl);
+                final Connection sqlConnection = DriverManager.getConnection(configuration.getJdbcUrl());
                 sqlConnection.setAutoCommit(false);
                 final PreparedStatement insertStatement = sqlConnection.prepareStatement(SqlService.INSERT_TRANSACTION_TABLE_SQL);
                 // Attempt decay product demand
                 for (Product product : Product.stockPrices.values()) {
-                    final int amount = Product.decayDemand(product, demandDecayAmount);
+                    final int amount = Product.decayDemand(product, configuration.getDemandDecayAmount());
                     if (amount > 0) {
                         // Setup prepared statement
                         insertStatement.setString(1, SqlService.SYSTEM_UUID);
@@ -183,7 +154,31 @@ public class SdEconomy extends JavaPlugin {
             } catch (SQLException e) {
                 getLogger().log(Level.SEVERE, "Error accessing database", e);
             }
-        }, demandDecayInterval, demandDecayInterval);
+        }, configuration.getDemandDecayInterval(), configuration.getDemandDecayInterval());
+    }
+
+    /**
+     * Registers all of the commands this plugin uses.
+     */
+    private void registerCommands() {
+        // Set price command
+        this.getCommand("setprice").setExecutor(new SetPriceCommand(this));
+        // Remove price command
+        this.getCommand("removeprice").setExecutor(new RemovePriceCommand(this));
+        // Get price command
+        this.getCommand("getprice").setExecutor(new GetPriceCommand(this));
+        // Check sell command
+        this.getCommand("checksell").setExecutor(new CheckSellCommand(this));
+        // Check buy command
+        this.getCommand("checkbuy").setExecutor(new CheckBuyCommand(this));
+        // Sell command
+        this.getCommand("sell").setExecutor(new SellCommand(this));
+        // Buy command
+        this.getCommand("buy").setExecutor(new BuyCommand(this));
+        // Transaction command
+        this.getCommand("transactions").setExecutor(new TransactionCommand(this));
+        // Version command
+        this.getCommand("sdversion").setExecutor(new GetVersionCommand(this));
     }
 
     /**
@@ -235,5 +230,12 @@ public class SdEconomy extends JavaPlugin {
      */
     public Economy getEconomyService() {
         return economyService;
+    }
+
+    /**
+     * @return the configuration for this plugin.
+     */
+    public Configuration getConfiguration() {
+        return configuration;
     }
 }

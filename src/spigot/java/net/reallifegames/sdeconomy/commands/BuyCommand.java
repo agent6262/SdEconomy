@@ -23,6 +23,7 @@
  */
 package net.reallifegames.sdeconomy.commands;
 
+import net.reallifegames.sdeconomy.InventoryUtility;
 import net.reallifegames.sdeconomy.Product;
 import net.reallifegames.sdeconomy.SdEconomy;
 import org.bukkit.ChatColor;
@@ -64,10 +65,9 @@ public class BuyCommand extends BaseCommand {
      */
     @Override
     public boolean onCommand(final CommandSender sender, final Command command, final String label, final String[] args) {
-        // todo add config to check if player can hold all in inventory
-        // todo add config option for max amount of items in one go
         if (sender instanceof Player) {
             final Player player = (Player) sender;
+            sender.sendMessage(ChatColor.GOLD + "" + player.getInventory().getStorageContents().length);
             // Check for arg length
             if (args.length != 2) {
                 sender.sendMessage(ChatColor.RED + "You need to specify the item name and price.");
@@ -93,13 +93,29 @@ public class BuyCommand extends BaseCommand {
                 sender.sendMessage(ChatColor.RED + "Invalid Item type.");
                 return true;
             }
+            // Check if there is a max buy amount
+            if (pluginInstance.getConfiguration().isUseMaxItemsPerBuy()) {
+                final int maxAmount = pluginInstance.getConfiguration().getMaxItemsPerBuy();
+                if (amount > maxAmount) {
+                    sender.sendMessage(ChatColor.RED + "You can only buy a max of `" + maxAmount + "` per command.");
+                    return true;
+                }
+            }
+            // Check if the plugin is not allowed to item drop
+            if (!pluginInstance.getConfiguration().isAllowItemDrop()) {
+                final int itemsLeft = InventoryUtility.canInventoryHold(player.getInventory(), amount);
+                if (itemsLeft > 0) {
+                    sender.sendMessage(ChatColor.RED + "Your inventory can only hold a max of `" + (amount - itemsLeft) + "` items currently.");
+                    return true;
+                }
+            }
             // Get player returns and add to player account
             double cost = Product.checkBuyCost(product, amount);
             final double playerBalance = pluginInstance.getEconomyService().getBalance(player);
             if (playerBalance >= cost) {
                 // Withdraw from player
                 try {
-                    cost = Product.buy(product, pluginInstance.getConfig().getString("jdbcUrl"),
+                    cost = Product.buy(product, pluginInstance.getConfiguration().getJdbcUrl(),
                             player.getUniqueId().toString(), amount);
                 } catch (SQLException e) {
                     pluginInstance.getLogger().log(Level.SEVERE, "Unable to access database.", e);
@@ -109,6 +125,11 @@ public class BuyCommand extends BaseCommand {
                 pluginInstance.getEconomyService().withdrawPlayer(player, cost);
                 // Send player message
                 sender.sendMessage(ChatColor.GREEN + "You received " + pluginInstance.decimalFormat.format(amount) + " " + args[0] + ".");
+                // A note to all future and current maintainers; As of 7/27/2018 the bukkit / spigot api
+                // seems to be in a tentative state for creating items stacks with specific meta data.
+                // This could be because of the current state of the minecraft server 'api' which spigot
+                // is built on. Once a safer and non deprecated method becomes available this constructor
+                // should be removed in favor of said method.
                 final Map<Integer, ItemStack> leftOverItems = player.getInventory()
                         .addItem(new ItemStack(material, amount, (short) 0, product.unsafeData));
                 leftOverItems.forEach((k, v)->player.getWorld().dropItem(player.getLocation(), v));

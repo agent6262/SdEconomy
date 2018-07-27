@@ -57,7 +57,7 @@ public class CheckBuyCommand extends BaseCommand {
      * @return true if a valid command, otherwise false.
      */
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(final CommandSender sender, final Command command, final String label, final String[] args) {
         // Check item in hand if no arguments
         if (args.length < 2) {
             sender.sendMessage(ChatColor.RED + "You need to specify the item name and amount.");

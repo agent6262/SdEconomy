@@ -86,7 +86,7 @@ public class SetPriceCommand extends BaseCommand {
             }
             itemTypeInfo[0] = itemTypeInfo[0].toUpperCase();
             args[0] = args[0].toLowerCase();
-            final String jdbcUrl = pluginInstance.getConfig().getString("jdbcUrl");
+            final String jdbcUrl = pluginInstance.getConfiguration().getJdbcUrl();
             final Product product = pluginInstance.getStockPrices().computeIfAbsent(args[0],
                     k->new Product(args[0], itemTypeInfo[0]));
             product.type = itemTypeInfo[0];

@@ -95,10 +95,10 @@ public class SqlService {
      * The economy transaction table.
      */
     @Nonnull
-    private static final String TRANSACTION_TABLE_SQL = "CREATE TABLE IF NOT EXISTS `sd_transaction` (`uuid` char(36) " +
+    private static final String TRANSACTION_TABLE_SQL = "CREATE TABLE IF NOT EXISTS `sd_transaction` (`uuid_id` INT " +
             "NOT NULL,`action` tinyint(4) NOT NULL,`price_id` int(11) NOT NULL,`date` timestamp NOT NULL DEFAULT " +
-            "CURRENT_TIMESTAMP,`amount` float NOT NULL, `money_exchanged` double NOT NULL DEFAULT '0', KEY `uuid` " +
-            "(`uuid`), KEY `action` (`action`), KEY `price_id` (`price_id`), KEY `date` (`date`)) ENGINE=InnoDB DEFAULT " +
+            "CURRENT_TIMESTAMP,`amount` float NOT NULL, `money_exchanged` double NOT NULL DEFAULT '0', KEY `uuid_id` " +
+            "(`uuid_id`), KEY `action` (`action`), KEY `price_id` (`price_id`), KEY `date` (`date`)) ENGINE=InnoDB DEFAULT " +
             "CHARSET=latin1;";
 
     /**

@@ -79,7 +79,7 @@ public class SellCommand extends BaseCommand {
             // Get player returns and add to player account
             final double returns;
             try {
-                returns = Product.sell(product, pluginInstance.getConfig().getString("jdbcUrl"),
+                returns = Product.sell(product, pluginInstance.getConfiguration().getJdbcUrl(),
                         player.getUniqueId().toString(), itemInHand.getAmount());
             } catch (SQLException e) {
                 pluginInstance.getLogger().log(Level.SEVERE, "Unable to access database.", e);

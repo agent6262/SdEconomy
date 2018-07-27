@@ -23,35 +23,31 @@
  */
 package net.reallifegames.sdeconomy.commands;
 
-import net.reallifegames.sdeconomy.Product;
 import net.reallifegames.sdeconomy.SdEconomy;
-import net.reallifegames.sdeconomy.SqlService;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 
 import javax.annotation.Nonnull;
-import java.sql.SQLException;
-import java.util.logging.Level;
 
 /**
- * Removes a price from the server.
+ * Returns the current version of the plugin.
  *
  * @author Tyler Bucher
  */
-public class RemovePriceCommand extends BaseCommand {
+public class GetVersionCommand extends BaseCommand {
 
     /**
      * Creates a new base command listener.
      *
      * @param pluginInstance the {@link SdEconomy} plugin instance.
      */
-    public RemovePriceCommand(@Nonnull final SdEconomy pluginInstance) {
+    public GetVersionCommand(@Nonnull final SdEconomy pluginInstance) {
         super(pluginInstance);
     }
 
     /**
-     * Executes the given command, returning its success
+     * Executes the given command, returning its success.
      *
      * @param sender  source of the command.
      * @param command command which was executed.
@@ -61,27 +57,7 @@ public class RemovePriceCommand extends BaseCommand {
      */
     @Override
     public boolean onCommand(final CommandSender sender, final Command command, final String label, final String[] args) {
-        // Check for arg length
-        if (args.length != 1) {
-            sender.sendMessage(ChatColor.RED + "You need to specify the item name.");
-            return false;
-        }
-        // Get item price
-        args[0] = args[0].toLowerCase();
-        final Product product = pluginInstance.getStockPrices().get(args[0]);
-        if (product == null) {
-            sender.sendMessage(ChatColor.GOLD + "The price of `" + args[0] + "` has not been set yet.");
-        } else {
-            try {
-                SqlService.deleteItemFromSdPrices(pluginInstance.getConfiguration().getJdbcUrl(), args[0]);
-            } catch (SQLException e) {
-                pluginInstance.getLogger().log(Level.SEVERE, "Unable to access database.", e);
-                sender.sendMessage(ChatColor.RED + "Error removing item.");
-                return true;
-            }
-            pluginInstance.getStockPrices().remove(args[0]);
-            sender.sendMessage(ChatColor.GOLD + "The item `" + args[0] + "` has been removed.");
-        }
+        sender.sendMessage(ChatColor.GOLD + "SdEconomy v2.1.2");
         return true;
     }
 }

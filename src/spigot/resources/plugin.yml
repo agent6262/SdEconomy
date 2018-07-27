@@ -23,7 +23,7 @@
 #
 
 name: SdEconomy
-version: 2.1.1
+version: 2.1.2
 main: net.reallifegames.sdeconomy.SdEconomy
 author: agent6262
 depend: [Vault]
@@ -61,3 +61,7 @@ commands:
     description: Checks a users transactions
     permission: sdeconomy.command.transactions
     usage: /<command> [playername] [pagenumber]
+  sdversion:
+    description: gets the current version of this plugin
+    permission: sdeconomy.command.version
+    usage: /<command>

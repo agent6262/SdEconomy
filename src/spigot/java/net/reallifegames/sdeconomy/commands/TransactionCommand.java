@@ -93,7 +93,7 @@ public class TransactionCommand extends BaseCommand {
         }
         // Connect to database
         try {
-            final Connection sqlConnection = DriverManager.getConnection(pluginInstance.getConfig().getString("jdbcUrl"));
+            final Connection sqlConnection = DriverManager.getConnection(pluginInstance.getConfiguration().getJdbcUrl());
             // Setup prepared statement
             final PreparedStatement searchStatement = sqlConnection.prepareStatement(SEARCH_USERS_TRANSACTIONS);
             searchStatement.setString(1, uuid);
