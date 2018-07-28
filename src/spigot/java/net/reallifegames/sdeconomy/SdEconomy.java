@@ -25,6 +25,9 @@ package net.reallifegames.sdeconomy;
 
 import net.milkbowl.vault.economy.Economy;
 import net.reallifegames.sdeconomy.commands.*;
+import net.reallifegames.sdeconomy.inventory.InventoryUtility;
+import net.reallifegames.sdeconomy.inventory.ItemListInventory;
+import net.reallifegames.sdeconomy.listeners.InventoryClickListener;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -155,6 +158,10 @@ public class SdEconomy extends JavaPlugin {
                 getLogger().log(Level.SEVERE, "Error accessing database", e);
             }
         }, configuration.getDemandDecayInterval(), configuration.getDemandDecayInterval());
+        // Setup Inventory data
+        ItemListInventory.addItemStacks(InventoryUtility.getItemStacksFromProducts(Product.stockPrices.values()));
+        // Register event listeners
+        this.getServer().getPluginManager().registerEvents(new InventoryClickListener(), this);
     }
 
     /**
@@ -179,6 +186,8 @@ public class SdEconomy extends JavaPlugin {
         this.getCommand("transactions").setExecutor(new TransactionCommand(this));
         // Version command
         this.getCommand("sdversion").setExecutor(new GetVersionCommand(this));
+        // Sd items command
+        this.getCommand("sditems").setExecutor(new SdItemsCommand(this));
     }
 
     /**

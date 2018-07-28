@@ -24,25 +24,27 @@
 package net.reallifegames.sdeconomy.commands;
 
 import net.reallifegames.sdeconomy.SdEconomy;
+import net.reallifegames.sdeconomy.inventory.ItemListInventory;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 
 import javax.annotation.Nonnull;
 
 /**
- * Returns the current version of the plugin.
+ * Opens a inventory to list the items for the sd economy.
  *
  * @author Tyler Bucher
  */
-public class GetVersionCommand extends BaseCommand {
+public class SdItemsCommand extends BaseCommand {
 
     /**
      * Creates a new base command listener.
      *
      * @param pluginInstance the {@link SdEconomy} plugin instance.
      */
-    public GetVersionCommand(@Nonnull final SdEconomy pluginInstance) {
+    public SdItemsCommand(@Nonnull final SdEconomy pluginInstance) {
         super(pluginInstance);
     }
 
@@ -57,7 +59,15 @@ public class GetVersionCommand extends BaseCommand {
      */
     @Override
     public boolean onCommand(final CommandSender sender, final Command command, final String label, final String[] args) {
-        sender.sendMessage(ChatColor.GOLD + "SdEconomy v2.1.3");
-        return true;
+        // Checks to see if the sender is a player
+        if (sender instanceof Player) {
+            final Player player = (Player) sender;
+            // Opens the sd economy inventory
+            player.openInventory(ItemListInventory.createInventory());
+            return true;
+        } else {
+            sender.sendMessage(ChatColor.RED + "You must be a player to run this command.");
+            return true;
+        }
     }
 }

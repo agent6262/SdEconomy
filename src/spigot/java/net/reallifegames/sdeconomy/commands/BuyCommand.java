@@ -23,9 +23,9 @@
  */
 package net.reallifegames.sdeconomy.commands;
 
-import net.reallifegames.sdeconomy.InventoryUtility;
 import net.reallifegames.sdeconomy.Product;
 import net.reallifegames.sdeconomy.SdEconomy;
+import net.reallifegames.sdeconomy.inventory.InventoryUtility;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.command.Command;

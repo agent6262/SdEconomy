@@ -21,12 +21,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.reallifegames.sdeconomy;
+package net.reallifegames.sdeconomy.inventory;
 
+import net.reallifegames.sdeconomy.Product;
+import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import javax.annotation.Nonnull;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * Contains utility functions for spigot inventorys.
@@ -54,5 +61,41 @@ public class InventoryUtility {
         }
         // If there are less then 0 left than return true
         return itemsLeft;
+    }
+
+    /**
+     * Creates a item stack array with item meta from a list of products.
+     *
+     * @param products the list of products to create a item stack array from.
+     * @return the create item stack array.
+     */
+    public static ItemStack[] getItemStacksFromProducts(@Nonnull final Collection<Product> products) {
+        final List<Product> sortedProducts = new ArrayList<>(products);
+        sortedProducts.sort(Comparator.comparing(o->o.alias));
+        // Create item stack array
+        final ItemStack[] itemStacks = new ItemStack[sortedProducts.size()];
+        // item stack index counter
+        int itemStackIndex = 0;
+        for (Product product : sortedProducts) {
+            // Get product material type
+            final Material material = Material.getMaterial(product.type);
+            if (material != null) {
+                // Create item stack
+                // A note to all future and current maintainers; As of 7/27/2018 the bukkit / spigot api
+                // seems to be in a tentative state for creating items stacks with specific meta data.
+                // This could be because of the current state of the minecraft server 'api' which spigot
+                // is built on. Once a safer and non deprecated method becomes available this constructor
+                // should be removed in favor of said method.
+                final ItemStack itemStack = new ItemStack(material, 1, (short) 0, product.unsafeData);
+                // Get item stack meta
+                final ItemMeta itemStackMeta = itemStack.getItemMeta();
+                // Set item meta information
+                itemStackMeta.setDisplayName(product.alias);
+                itemStack.setItemMeta(itemStackMeta);
+                // Add item to item stack array
+                itemStacks[itemStackIndex++] = itemStack;
+            }
+        }
+        return itemStacks;
     }
 }

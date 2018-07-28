@@ -27,6 +27,7 @@ import net.reallifegames.sdeconomy.Product;
 import net.reallifegames.sdeconomy.SdEconomy;
 import net.reallifegames.sdeconomy.SqlService;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -85,6 +86,12 @@ public class SetPriceCommand extends BaseCommand {
                 return false;
             }
             itemTypeInfo[0] = itemTypeInfo[0].toUpperCase();
+            final Material material = Material.getMaterial(itemTypeInfo[0]);
+            if (material == null) {
+                // Send player message
+                sender.sendMessage(ChatColor.RED + "Invalid Item type.");
+                return false;
+            }
             args[0] = args[0].toLowerCase();
             final String jdbcUrl = pluginInstance.getConfiguration().getJdbcUrl();
             final Product product = pluginInstance.getStockPrices().computeIfAbsent(args[0],
