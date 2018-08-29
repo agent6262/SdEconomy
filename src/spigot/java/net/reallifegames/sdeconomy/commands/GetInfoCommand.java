@@ -23,8 +23,9 @@
  */
 package net.reallifegames.sdeconomy.commands;
 
-import net.reallifegames.sdeconomy.Product;
+import net.reallifegames.sdeconomy.DefaultProduct;
 import net.reallifegames.sdeconomy.SdEconomy;
+import net.reallifegames.sdeconomy.SpigotDefaultEconomy;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -36,14 +37,14 @@ import javax.annotation.Nonnull;
  *
  * @author Tyler Bucher.
  */
-public class GetPriceCommand extends BaseCommand {
+final class GetInfoCommand extends BaseCommand {
 
     /**
      * Creates a new base command listener.
      *
      * @param pluginInstance the {@link SdEconomy} plugin instance.
      */
-    public GetPriceCommand(@Nonnull final SdEconomy pluginInstance) {
+    public GetInfoCommand(@Nonnull final SdEconomy pluginInstance) {
         super(pluginInstance);
     }
 
@@ -64,12 +65,22 @@ public class GetPriceCommand extends BaseCommand {
             return false;
         }
         // Get item price
-        final Product product = pluginInstance.getStockPrices().get(args[0]);
-        if (product == null) {
-            sender.sendMessage(ChatColor.GOLD + "The price of `" + args[0] + "` has not been set yet.");
+        final DefaultProduct defaultProduct = SpigotDefaultEconomy.stockPrices.get(args[0]);
+        if (defaultProduct == null) {
+            sender.sendMessage(ChatColor.GOLD + "There is not info for the `" + args[0] + "` product.");
         } else {
-            sender.sendMessage(ChatColor.GOLD + "The price of `" + args[0] + "` is: " +
-                    pluginInstance.decimalFormat.format(product.getPrice()));
+            sender.sendMessage(ChatColor.GOLD + "'" + args[0] + "' product information: ");
+            sender.sendMessage(ChatColor.GOLD + "    alias: " + defaultProduct.alias);
+            sender.sendMessage(ChatColor.GOLD + "    type: " + defaultProduct.type);
+            sender.sendMessage(ChatColor.GOLD + "    unsafe data: " + defaultProduct.unsafeData);
+            sender.sendMessage(ChatColor.GOLD + "    price: " + pluginInstance.decimalFormat.format(defaultProduct.getPrice()));
+            sender.sendMessage(ChatColor.GOLD + "    calculated price: " + pluginInstance.decimalFormat.format(defaultProduct.getPrice() *
+                    ((double) defaultProduct.demand / (double) defaultProduct.supply)));
+            sender.sendMessage(ChatColor.GOLD + "    supply: " + defaultProduct.supply);
+            sender.sendMessage(ChatColor.GOLD + "    demand: " + defaultProduct.demand);
+            sender.sendMessage(ChatColor.GOLD + "    decay amount: " + defaultProduct.decayAmount);
+            sender.sendMessage(ChatColor.GOLD + "    decay interval: " + defaultProduct.decayInterval);
+            sender.sendMessage(ChatColor.GOLD + "    decay type: " + defaultProduct.decayType);
         }
         return true;
     }

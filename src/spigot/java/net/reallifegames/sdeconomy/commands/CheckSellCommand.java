@@ -23,8 +23,7 @@
  */
 package net.reallifegames.sdeconomy.commands;
 
-import net.reallifegames.sdeconomy.Product;
-import net.reallifegames.sdeconomy.SdEconomy;
+import net.reallifegames.sdeconomy.*;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -39,7 +38,7 @@ import javax.annotation.Nonnull;
  *
  * @author Tyler Bucher
  */
-public class CheckSellCommand extends BaseCommand {
+final class CheckSellCommand extends BaseCommand {
 
     /**
      * Creates a new base command listener.
@@ -70,13 +69,13 @@ public class CheckSellCommand extends BaseCommand {
                     sender.sendMessage(ChatColor.RED + "You must have an item in your hand to run this command this way.");
                     return false;
                 }
-                final Product product = pluginInstance.getProductFromItemStack(itemInHand);
-                if (product == null) {
+                final DefaultProduct defaultProduct = SpigotDefaultEconomy.getProductFromItemStack(itemInHand);
+                if (defaultProduct == null) {
                     sender.sendMessage(ChatColor.GOLD + "The price of `" + itemInHand.getType().name() + "` has not been set yet.");
                     return true;
                 }
                 sender.sendMessage(ChatColor.GOLD + "You will receive " + pluginInstance.decimalFormat.format(
-                        Product.checkSellReturns(product, itemInHand.getAmount())) + " " +
+                        DefaultEconomy.checkSellReturns(defaultProduct, itemInHand.getAmount())) + " " +
                         pluginInstance.getEconomyService().currencyNamePlural() + ".");
                 return true;
             } else {
@@ -95,13 +94,13 @@ public class CheckSellCommand extends BaseCommand {
                 sender.sendMessage(ChatColor.RED + args[1] + " is not a number.");
                 return false;
             }
-            final Product product = pluginInstance.getStockPrices().get(args[0]);
-            if (product == null) {
+            final DefaultProduct defaultProduct = SpigotDefaultEconomy.stockPrices.get(args[0]);
+            if (defaultProduct == null) {
                 sender.sendMessage(ChatColor.GOLD + "The price of `" + args[0] + "` has not been set yet.");
                 return true;
             }
             sender.sendMessage(ChatColor.GOLD + "You will receive " + pluginInstance.decimalFormat.format(
-                    Product.checkSellReturns(product, amount)) + " " + pluginInstance.getEconomyService().currencyNamePlural() + ".");
+                    DefaultEconomy.checkSellReturns(defaultProduct, amount)) + " " + pluginInstance.getEconomyService().currencyNamePlural() + ".");
             return true;
         }
     }

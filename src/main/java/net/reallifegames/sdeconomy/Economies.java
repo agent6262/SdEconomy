@@ -21,43 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.reallifegames.sdeconomy.commands;
-
-import net.reallifegames.sdeconomy.SdEconomy;
-import org.bukkit.ChatColor;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
-
-import javax.annotation.Nonnull;
+package net.reallifegames.sdeconomy;
 
 /**
- * Returns the current version of the plugin.
+ * A class for global information and functions for all economies.
  *
  * @author Tyler Bucher
  */
-final class GetVersionCommand extends BaseCommand {
+public class Economies {
 
     /**
-     * Creates a new base command listener.
-     *
-     * @param pluginInstance the {@link SdEconomy} plugin instance.
+     * The default economy type.
      */
-    public GetVersionCommand(@Nonnull final SdEconomy pluginInstance) {
-        super(pluginInstance);
-    }
-
-    /**
-     * Executes the given command, returning its success.
-     *
-     * @param sender  source of the command.
-     * @param command command which was executed.
-     * @param label   alias of the command which was used.
-     * @param args    passed command arguments.
-     * @return true if a valid command, otherwise false.
-     */
-    @Override
-    public boolean onCommand(final CommandSender sender, final Command command, final String label, final String[] args) {
-        sender.sendMessage(ChatColor.GOLD + pluginInstance.getDescription().getVersion());
-        return true;
-    }
+    public static byte DEFAULT_TYPE = 0;
 }

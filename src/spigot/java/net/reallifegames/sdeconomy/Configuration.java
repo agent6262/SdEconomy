@@ -50,16 +50,6 @@ public class Configuration {
     private long saveInterval;
 
     /**
-     * How long in ticks till the demand value of all products decay.
-     */
-    private long demandDecayInterval;
-
-    /**
-     * How much to decay each product.
-     */
-    private int demandDecayAmount;
-
-    /**
      * States if there should be a maximum amount per buy command.
      */
     private boolean useMaxItemsPerBuy;
@@ -88,8 +78,6 @@ public class Configuration {
         this.jdbcUrl = config.getString("jdbcUrl");
         this.populateDatabase = config.getBoolean("populateDatabase");
         this.saveInterval = config.getLong("saveInterval");
-        this.demandDecayInterval = config.getLong("saveInterval");
-        this.demandDecayAmount = config.getInt("demandDecayAmount");
         this.useMaxItemsPerBuy = config.getBoolean("useMaxItemsPerBuy");
         this.maxItemsPerBuy = config.getInt("maxItemsPerBuy");
         this.allowItemDrop = config.getBoolean("allowItemDrop");
@@ -136,20 +124,6 @@ public class Configuration {
      */
     public long getSaveInterval() {
         return saveInterval;
-    }
-
-    /**
-     * @return how long in ticks till the demand value of all products decay.
-     */
-    public long getDemandDecayInterval() {
-        return demandDecayInterval;
-    }
-
-    /**
-     * @return how much to decay each product.
-     */
-    public int getDemandDecayAmount() {
-        return demandDecayAmount;
     }
 
     /**

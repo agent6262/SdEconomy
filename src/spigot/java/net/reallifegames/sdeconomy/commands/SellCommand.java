@@ -23,8 +23,10 @@
  */
 package net.reallifegames.sdeconomy.commands;
 
-import net.reallifegames.sdeconomy.Product;
+import net.reallifegames.sdeconomy.DefaultEconomy;
+import net.reallifegames.sdeconomy.DefaultProduct;
 import net.reallifegames.sdeconomy.SdEconomy;
+import net.reallifegames.sdeconomy.SpigotDefaultEconomy;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -41,7 +43,7 @@ import java.util.logging.Level;
  *
  * @author Tyler Bucher
  */
-public class SellCommand extends BaseCommand {
+final class SellCommand extends BaseCommand {
 
     /**
      * Creates a new base command listener.
@@ -65,21 +67,21 @@ public class SellCommand extends BaseCommand {
     public boolean onCommand(final CommandSender sender, final Command command, final String label, final String[] args) {
         if (sender instanceof Player) {
             final Player player = (Player) sender;
-            // Get product and item
+            // Get defaultProduct and item
             final ItemStack itemInHand = player.getInventory().getItemInMainHand();
             if (itemInHand.getType().equals(Material.AIR)) {
                 sender.sendMessage(ChatColor.RED + "You must have an item in your hand to run this command this way.");
                 return false;
             }
-            final Product product = pluginInstance.getProductFromItemStack(itemInHand);
-            if (product == null) {
-                sender.sendMessage(ChatColor.GOLD + "The price of `" + args[0] + "` has not been set yet.");
+            final DefaultProduct defaultProduct = SpigotDefaultEconomy.getProductFromItemStack(itemInHand);
+            if (defaultProduct == null) {
+                sender.sendMessage(ChatColor.RED + "Error selling item.");
                 return true;
             }
             // Get player returns and add to player account
             final double returns;
             try {
-                returns = Product.sell(product, pluginInstance.getConfiguration().getJdbcUrl(),
+                returns = DefaultEconomy.sell(defaultProduct, pluginInstance.getConfiguration().getJdbcUrl(),
                         player.getUniqueId().toString(), itemInHand.getAmount());
             } catch (SQLException e) {
                 pluginInstance.getLogger().log(Level.SEVERE, "Unable to access database.", e);

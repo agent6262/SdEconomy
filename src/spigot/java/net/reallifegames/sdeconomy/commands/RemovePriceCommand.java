@@ -23,8 +23,9 @@
  */
 package net.reallifegames.sdeconomy.commands;
 
-import net.reallifegames.sdeconomy.Product;
+import net.reallifegames.sdeconomy.DefaultProduct;
 import net.reallifegames.sdeconomy.SdEconomy;
+import net.reallifegames.sdeconomy.SpigotDefaultEconomy;
 import net.reallifegames.sdeconomy.SqlService;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -39,7 +40,7 @@ import java.util.logging.Level;
  *
  * @author Tyler Bucher
  */
-public class RemovePriceCommand extends BaseCommand {
+final class RemovePriceCommand extends BaseCommand {
 
     /**
      * Creates a new base command listener.
@@ -68,8 +69,8 @@ public class RemovePriceCommand extends BaseCommand {
         }
         // Get item price
         args[0] = args[0].toLowerCase();
-        final Product product = pluginInstance.getStockPrices().get(args[0]);
-        if (product == null) {
+        final DefaultProduct defaultProduct = SpigotDefaultEconomy.stockPrices.get(args[0]);
+        if (defaultProduct == null) {
             sender.sendMessage(ChatColor.GOLD + "The price of `" + args[0] + "` has not been set yet.");
         } else {
             try {
@@ -79,7 +80,7 @@ public class RemovePriceCommand extends BaseCommand {
                 sender.sendMessage(ChatColor.RED + "Error removing item.");
                 return true;
             }
-            pluginInstance.getStockPrices().remove(args[0]);
+            SpigotDefaultEconomy.stockPrices.remove(args[0]);
             sender.sendMessage(ChatColor.GOLD + "The item `" + args[0] + "` has been removed.");
         }
         return true;

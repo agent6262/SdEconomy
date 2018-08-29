@@ -23,9 +23,7 @@
  */
 package net.reallifegames.sdeconomy.commands;
 
-import net.reallifegames.sdeconomy.Product;
-import net.reallifegames.sdeconomy.SdEconomy;
-import net.reallifegames.sdeconomy.SqlService;
+import net.reallifegames.sdeconomy.*;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -41,7 +39,7 @@ import java.util.logging.Level;
  *
  * @author Tyler Bucher
  */
-public class SetPriceCommand extends BaseCommand {
+final class SetPriceCommand extends BaseCommand {
 
     /**
      * Creates a new base command listener.
@@ -66,7 +64,7 @@ public class SetPriceCommand extends BaseCommand {
             final Player player = (Player) sender;
             // Check for arg length
             if (args.length != 3) {
-                sender.sendMessage(ChatColor.RED + "You need to specify the product name, type and price.");
+                sender.sendMessage(ChatColor.RED + "You need to specify the defaultProduct name, type and price.");
                 return false;
             }
             // Get price
@@ -94,20 +92,20 @@ public class SetPriceCommand extends BaseCommand {
             }
             args[0] = args[0].toLowerCase();
             final String jdbcUrl = pluginInstance.getConfiguration().getJdbcUrl();
-            final Product product = pluginInstance.getStockPrices().computeIfAbsent(args[0],
-                    k->new Product(args[0], itemTypeInfo[0]));
-            product.type = itemTypeInfo[0];
-            product.unsafeData = unsafeData;
+            final DefaultProduct defaultProduct = SpigotDefaultEconomy.stockPrices.computeIfAbsent(args[0],
+                    k->new DefaultProduct(args[0], itemTypeInfo[0]));
+            defaultProduct.type = itemTypeInfo[0];
+            defaultProduct.unsafeData = unsafeData;
             try {
-                SqlService.updateProduct(jdbcUrl, product);
-                Product.setPrice(product, jdbcUrl, player.getUniqueId().toString(), price);
+                SqlService.updateDefaultProduct(jdbcUrl, defaultProduct);
+                DefaultEconomy.setPrice(defaultProduct, jdbcUrl, player.getUniqueId().toString(), price);
             } catch (SQLException e) {
                 pluginInstance.getLogger().log(Level.SEVERE, "Unable to access database.", e);
                 sender.sendMessage(ChatColor.RED + "Error setting item price.");
                 return true;
             }
             sender.sendMessage(ChatColor.GREEN + "The price of `" + args[0] + "` has been set to " +
-                    pluginInstance.decimalFormat.format(product.getPrice()));
+                    pluginInstance.decimalFormat.format(defaultProduct.getPrice()));
             return true;
         } else {
             sender.sendMessage(ChatColor.RED + "You must be a player to run this command.");

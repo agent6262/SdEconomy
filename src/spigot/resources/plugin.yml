@@ -23,7 +23,7 @@
 #
 
 name: SdEconomy
-version: 2.1.3
+version: 2.1.4
 main: net.reallifegames.sdeconomy.SdEconomy
 author: agent6262
 depend: [Vault]
@@ -37,9 +37,9 @@ commands:
     description: Removes the price of an item
     permission: sdeconomy.command.removeprice
     usage: /<command> [alias]
-  getprice:
-    description: Gets the price of an item
-    permission: sdeconomy.command.getprice
+  getinfo:
+    description: Gets the info of an item
+    permission: sdeconomy.command.getinfo
     usage: /<command> [itemname]
   checksell:
     description: Checks the sell price of an item

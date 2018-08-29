@@ -23,7 +23,7 @@
  */
 package net.reallifegames.sdeconomy.inventory;
 
-import net.reallifegames.sdeconomy.Product;
+import net.reallifegames.sdeconomy.DefaultProduct;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -64,21 +64,21 @@ public class InventoryUtility {
     }
 
     /**
-     * Creates a item stack array with item meta from a list of products.
+     * Creates a item stack array with item meta from a list of defaultProducts.
      *
-     * @param products the list of products to create a item stack array from.
+     * @param defaultProducts the list of defaultProducts to create a item stack array from.
      * @return the create item stack array.
      */
-    public static ItemStack[] getItemStacksFromProducts(@Nonnull final Collection<Product> products) {
-        final List<Product> sortedProducts = new ArrayList<>(products);
-        sortedProducts.sort(Comparator.comparing(o->o.alias));
+    public static ItemStack[] getItemStacksFromProducts(@Nonnull final Collection<DefaultProduct> defaultProducts) {
+        final List<DefaultProduct> sortedDefaultProducts = new ArrayList<>(defaultProducts);
+        sortedDefaultProducts.sort(Comparator.comparing(o->o.alias));
         // Create item stack array
-        final ItemStack[] itemStacks = new ItemStack[sortedProducts.size()];
+        final ItemStack[] itemStacks = new ItemStack[sortedDefaultProducts.size()];
         // item stack index counter
         int itemStackIndex = 0;
-        for (Product product : sortedProducts) {
-            // Get product material type
-            final Material material = Material.getMaterial(product.type);
+        for (DefaultProduct defaultProduct : sortedDefaultProducts) {
+            // Get defaultProduct material type
+            final Material material = Material.getMaterial(defaultProduct.type);
             if (material != null) {
                 // Create item stack
                 // A note to all future and current maintainers; As of 7/27/2018 the bukkit / spigot api
@@ -86,11 +86,11 @@ public class InventoryUtility {
                 // This could be because of the current state of the minecraft server 'api' which spigot
                 // is built on. Once a safer and non deprecated method becomes available this constructor
                 // should be removed in favor of said method.
-                final ItemStack itemStack = new ItemStack(material, 1, (short) 0, product.unsafeData);
+                final ItemStack itemStack = new ItemStack(material, 1, (short) 0, defaultProduct.unsafeData);
                 // Get item stack meta
                 final ItemMeta itemStackMeta = itemStack.getItemMeta();
                 // Set item meta information
-                itemStackMeta.setDisplayName(product.alias);
+                itemStackMeta.setDisplayName(defaultProduct.alias);
                 itemStack.setItemMeta(itemStackMeta);
                 // Add item to item stack array
                 itemStacks[itemStackIndex++] = itemStack;

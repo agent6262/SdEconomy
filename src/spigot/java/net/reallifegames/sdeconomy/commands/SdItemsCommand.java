@@ -37,7 +37,7 @@ import javax.annotation.Nonnull;
  *
  * @author Tyler Bucher
  */
-public class SdItemsCommand extends BaseCommand {
+final class SdItemsCommand extends BaseCommand {
 
     /**
      * Creates a new base command listener.

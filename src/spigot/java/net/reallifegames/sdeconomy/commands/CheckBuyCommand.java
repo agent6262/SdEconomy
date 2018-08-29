@@ -23,8 +23,10 @@
  */
 package net.reallifegames.sdeconomy.commands;
 
-import net.reallifegames.sdeconomy.Product;
+import net.reallifegames.sdeconomy.DefaultEconomy;
+import net.reallifegames.sdeconomy.DefaultProduct;
 import net.reallifegames.sdeconomy.SdEconomy;
+import net.reallifegames.sdeconomy.SpigotDefaultEconomy;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -36,7 +38,7 @@ import javax.annotation.Nonnull;
  *
  * @author Tyler Bucher
  */
-public class CheckBuyCommand extends BaseCommand {
+final class CheckBuyCommand extends BaseCommand {
 
     /**
      * Creates a new base command listener.
@@ -70,12 +72,12 @@ public class CheckBuyCommand extends BaseCommand {
                 sender.sendMessage(ChatColor.RED + args[1] + " is not a number.");
                 return false;
             }
-            final Product product = pluginInstance.getStockPrices().get(args[0]);
-            if (product == null) {
+            final DefaultProduct defaultProduct = SpigotDefaultEconomy.stockPrices.get(args[0]);
+            if (defaultProduct == null) {
                 sender.sendMessage(ChatColor.GOLD + "The price of `" + args[0] + "` has not been set yet.");
                 return true;
             }
-            sender.sendMessage(ChatColor.GOLD + "It will cost " + pluginInstance.decimalFormat.format(Product.checkBuyCost(product, amount)) + " "
+            sender.sendMessage(ChatColor.GOLD + "It will cost " + pluginInstance.decimalFormat.format(DefaultEconomy.checkBuyCost(defaultProduct, amount)) + " "
                     + pluginInstance.getEconomyService().currencyNamePlural() + " to buy '" + args[0] + "'");
             return true;
         }

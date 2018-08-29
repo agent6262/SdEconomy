@@ -21,43 +21,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.reallifegames.sdeconomy.commands;
+package net.reallifegames.sdeconomy;
 
-import net.reallifegames.sdeconomy.SdEconomy;
-import org.bukkit.ChatColor;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
-
-import javax.annotation.Nonnull;
+import java.util.List;
 
 /**
- * Returns the current version of the plugin.
+ * A runnable class for decaying a product.
  *
+ * @param <T> a type of a product.
  * @author Tyler Bucher
  */
-final class GetVersionCommand extends BaseCommand {
+public abstract class ProductDecayRunnable<T> implements Runnable {
 
     /**
-     * Creates a new base command listener.
-     *
-     * @param pluginInstance the {@link SdEconomy} plugin instance.
+     * How long until the the run function is called.
      */
-    public GetVersionCommand(@Nonnull final SdEconomy pluginInstance) {
-        super(pluginInstance);
-    }
+    protected final long delay;
 
     /**
-     * Executes the given command, returning its success.
-     *
-     * @param sender  source of the command.
-     * @param command command which was executed.
-     * @param label   alias of the command which was used.
-     * @param args    passed command arguments.
-     * @return true if a valid command, otherwise false.
+     * How often in milliseconds should this {@link Runnable} be run.
      */
-    @Override
-    public boolean onCommand(final CommandSender sender, final Command command, final String label, final String[] args) {
-        sender.sendMessage(ChatColor.GOLD + pluginInstance.getDescription().getVersion());
-        return true;
+    protected final long interval;
+
+    /**
+     * The list of products for this {@link Runnable}.
+     */
+    protected final List<T> productList;
+
+    /**
+     * Creates a new {@link Runnable} for decaying a product.
+     *
+     * @param delay       how long until the the run function is called.
+     * @param interval    how often in milliseconds should this {@link Runnable} be run.
+     * @param productList the list of products for this {@link Runnable}.
+     */
+    public ProductDecayRunnable(final long delay, final long interval, List<T> productList) {
+        this.delay = delay;
+        this.interval = interval;
+        this.productList = productList;
     }
 }

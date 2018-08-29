@@ -23,8 +23,10 @@
  */
 package net.reallifegames.sdeconomy.commands;
 
-import net.reallifegames.sdeconomy.Product;
+import net.reallifegames.sdeconomy.DefaultEconomy;
+import net.reallifegames.sdeconomy.DefaultProduct;
 import net.reallifegames.sdeconomy.SdEconomy;
+import net.reallifegames.sdeconomy.SpigotDefaultEconomy;
 import net.reallifegames.sdeconomy.inventory.InventoryUtility;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -43,7 +45,7 @@ import java.util.logging.Level;
  *
  * @author Tyler Bucher
  */
-public class BuyCommand extends BaseCommand {
+final class BuyCommand extends BaseCommand {
 
     /**
      * Creates a new base command listener.
@@ -81,13 +83,13 @@ public class BuyCommand extends BaseCommand {
                 sender.sendMessage(ChatColor.RED + args[1] + " is not a number.");
                 return false;
             }
-            // Get product and item
-            final Product product = pluginInstance.getStockPrices().get(args[0]);
-            if (product == null) {
+            // Get defaultProduct and item
+            final DefaultProduct defaultProduct = SpigotDefaultEconomy.stockPrices.get(args[0]);
+            if (defaultProduct == null) {
                 sender.sendMessage(ChatColor.GOLD + "The price of `" + args[0] + "` has not been set yet.");
                 return true;
             }
-            final Material material = Material.getMaterial(product.type);
+            final Material material = Material.getMaterial(defaultProduct.type);
             if (material == null) {
                 // Send player message
                 sender.sendMessage(ChatColor.RED + "Invalid Item type.");
@@ -110,12 +112,12 @@ public class BuyCommand extends BaseCommand {
                 }
             }
             // Get player returns and add to player account
-            double cost = Product.checkBuyCost(product, amount);
+            double cost = DefaultEconomy.checkBuyCost(defaultProduct, amount);
             final double playerBalance = pluginInstance.getEconomyService().getBalance(player);
             if (playerBalance >= cost) {
                 // Withdraw from player
                 try {
-                    cost = Product.buy(product, pluginInstance.getConfiguration().getJdbcUrl(),
+                    cost = DefaultEconomy.buy(defaultProduct, pluginInstance.getConfiguration().getJdbcUrl(),
                             player.getUniqueId().toString(), amount);
                 } catch (SQLException e) {
                     pluginInstance.getLogger().log(Level.SEVERE, "Unable to access database.", e);
@@ -131,7 +133,7 @@ public class BuyCommand extends BaseCommand {
                 // is built on. Once a safer and non deprecated method becomes available this constructor
                 // should be removed in favor of said method.
                 final Map<Integer, ItemStack> leftOverItems = player.getInventory()
-                        .addItem(new ItemStack(material, amount, (short) 0, product.unsafeData));
+                        .addItem(new ItemStack(material, amount, (short) 0, defaultProduct.unsafeData));
                 leftOverItems.forEach((k, v)->player.getWorld().dropItem(player.getLocation(), v));
                 return true;
             } else {

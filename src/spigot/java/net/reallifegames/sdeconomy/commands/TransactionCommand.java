@@ -23,8 +23,9 @@
  */
 package net.reallifegames.sdeconomy.commands;
 
-import net.reallifegames.sdeconomy.Product;
+import net.reallifegames.sdeconomy.DefaultProduct;
 import net.reallifegames.sdeconomy.SdEconomy;
+import net.reallifegames.sdeconomy.SpigotDefaultEconomy;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
@@ -36,14 +37,14 @@ import java.sql.*;
 import java.util.Collection;
 import java.util.logging.Level;
 
-import static net.reallifegames.sdeconomy.SqlService.SEARCH_USERS_TRANSACTIONS;
+import static net.reallifegames.sdeconomy.SqlService.SEARCH_DEFAULT_USERS_TRANSACTIONS;
 
 /**
  * Gets the transactions for a user.
  *
  * @author Tyler Bucher.
  */
-public class TransactionCommand extends BaseCommand {
+final class TransactionCommand extends BaseCommand {
 
     /**
      * Creates a new base command listener.
@@ -95,7 +96,7 @@ public class TransactionCommand extends BaseCommand {
         try {
             final Connection sqlConnection = DriverManager.getConnection(pluginInstance.getConfiguration().getJdbcUrl());
             // Setup prepared statement
-            final PreparedStatement searchStatement = sqlConnection.prepareStatement(SEARCH_USERS_TRANSACTIONS);
+            final PreparedStatement searchStatement = sqlConnection.prepareStatement(SEARCH_DEFAULT_USERS_TRANSACTIONS);
             searchStatement.setString(1, uuid);
             searchStatement.setInt(2, pageNumber);
             // Execute query
@@ -105,14 +106,15 @@ public class TransactionCommand extends BaseCommand {
                 return true;
             }
             final StringBuilder builder = new StringBuilder();
-            final int aliasMaxLength = getMaxLength(pluginInstance.getStockPrices().values());
+            final int aliasMaxLength = getMaxLength(SpigotDefaultEconomy.stockPrices.values());
             do {
                 builder.append(ChatColor.DARK_AQUA)
                         .append(postPadString(getTextAction(resultSet.getInt("action")), 9)).append(' ')
                         .append(ChatColor.RESET).append(postPadString(resultSet.getString("alias"), aliasMaxLength))
                         .append(' ').append(ChatColor.GOLD)
                         .append(postPadString(resultSet.getString("date"), 19)).append(' ')
-                        .append(ChatColor.GREEN).append(resultSet.getFloat("amount"));
+                        .append(ChatColor.GREEN).append(pluginInstance.decimalFormat.format(resultSet.getFloat("amount"))).append(' ')
+                        .append(ChatColor.DARK_GREEN).append(pluginInstance.decimalFormat.format(resultSet.getDouble("money_exchanged")));
                 sender.sendMessage(builder.toString());
                 builder.setLength(0);
             } while (resultSet.next());
@@ -162,14 +164,14 @@ public class TransactionCommand extends BaseCommand {
     }
 
     /**
-     * @param productList the list of products to check
+     * @param defaultProductList the list of products to check
      * @return the maximum length of an alias.
      */
-    private static int getMaxLength(@Nonnull final Collection<Product> productList) {
+    private static int getMaxLength(@Nonnull final Collection<DefaultProduct> defaultProductList) {
         int length = 0;
-        for (final Product product : productList) {
-            if (product.alias.length() > length) {
-                length = product.alias.length();
+        for (final DefaultProduct defaultProduct : defaultProductList) {
+            if (defaultProduct.alias.length() > length) {
+                length = defaultProduct.alias.length();
             }
         }
         return length;
